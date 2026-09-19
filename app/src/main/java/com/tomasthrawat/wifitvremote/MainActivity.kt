@@ -13,9 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,9 +159,7 @@ private fun Screen() {
                                     val submittedCode = code
                                     AppLogger.i("PAIRING_UI", "pairing code submitted length=" + submittedCode.trim().length)
                                     scope.launch {
-                                        val success = withContext(Dispatchers.IO) {
-                                            p.submitCode(submittedCode)
-                                        }
+                                        val success = p.submitCode(submittedCode)
                                         status = if (success) {
                                             "تم إرسال الرمز. انتظار التلفزيون..."
                                         } else {

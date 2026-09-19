@@ -1,5 +1,6 @@
 package com.tomasthrawat.wifitvremote
 
+import android.os.Handler
 import android.os.Looper
 
 import android.content.Context
@@ -18,6 +19,8 @@ import java.security.MessageDigest
 import java.security.cert.X509Certificate
 import java.security.interfaces.RSAPublicKey
 import javax.net.ssl.SSLSocket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class TvPairing(
     private val context: Context,
@@ -29,6 +32,11 @@ class TvPairing(
     private var socket: SSLSocket? = null
     private var clientIdentity: ClientIdentity? = null
     private var serverCertificate: X509Certificate? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private fun postMain(block: () -> Unit) {
+        mainHandler.post(block)
+    }
 
     fun start() {
         AppLogger.i("PAIRING", "start host=" + host + " port=6467")
@@ -69,19 +77,19 @@ class TvPairing(
 
                         message.hasPairingRequestAck() -> { AppLogger.d("PAIRING", "request acknowledged; sending option"); send(option()) }
                         message.hasPairingOption() -> { AppLogger.d("PAIRING", "option received; sending configuration"); send(config()) }
-                        message.hasPairingConfigurationAck() -> { AppLogger.i("PAIRING", "configuration acknowledged; waiting for user code"); onCode() }
+                        message.hasPairingConfigurationAck() -> { AppLogger.i("PAIRING", "configuration acknowledged; waiting for user code"); postMain(onCode) }
 
                         message.hasPairingSecretAck() -> {
                             AppLogger.i("PAIRING", "secret acknowledged; pairing successful")
                             s.close()
-                            onPaired(id)
+                            postMain { onPaired(id) }
                             return@Thread
                         }
                     }
                 }
             } catch (t: Throwable) {
                 AppLogger.e("PAIRING", "pairing thread failed", t)
-                onError(t)
+                postMain { onError(t) }
             }
         }.start()
     }
@@ -137,12 +145,9 @@ class TvPairing(
         Framing.write(socket!!.outputStream, bytes)
     }
 
-    fun submitCode(raw: String): Boolean {
-        check(Looper.myLooper() != Looper.getMainLooper()) {
-            "submitCode must run off the main thread"
-        }
+    suspend fun submitCode(raw: String): Boolean = withContext(Dispatchers.IO) {
         AppLogger.i("PAIRING_CODE", "submit requested rawLength=" + raw.trim().length)
-        return try {
+        try {
             val id = clientIdentity ?: return false
             val server = serverCertificate ?: return false
             val clientKey = id.cert.publicKey as? RSAPublicKey
@@ -210,7 +215,7 @@ class TvPairing(
             true
         } catch (t: Throwable) {
             AppLogger.e("PAIRING_CODE", "submit failed", t)
-            onError(t)
+            postMain { onError(t) }
             false
         }
     }

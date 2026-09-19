@@ -9,6 +9,13 @@ import remote.RemoteMessage
 import remote.RemotePingResponse
 import remote.RemoteSetActive
 import java.net.InetSocketAddress
+import android.os.Handler
+import android.os.Looper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import javax.net.ssl.SSLSocket
 
 class TvRemote(
@@ -18,10 +25,16 @@ class TvRemote(
     private val onError: (Throwable) -> Unit
 ) {
     private var socket: SSLSocket? = null
+    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private fun postMain(block: () -> Unit) {
+        mainHandler.post(block)
+    }
 
     fun start() {
         AppLogger.i("REMOTE", "start host=" + host + " port=6466")
-        Thread {
+        ioScope.launch {
             try {
                 socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
                 AppLogger.i("REMOTE", "connecting TLS port=6466 timeoutMs=8000")
@@ -48,7 +61,7 @@ class TvRemote(
                                             .build().toByteArray()
                                     )
                                     AppLogger.i("REMOTE", "remote active; onReady")
-                                    onReady()
+                                    postMain(onReady)
                                 }
                                 message.hasRemotePingRequest() -> {
                                     AppLogger.d("REMOTE", "received ping request; replying")
@@ -67,9 +80,9 @@ class TvRemote(
                 }
             } catch (t: Throwable) {
                 AppLogger.e("REMOTE", "remote thread failed", t)
-                onError(t)
+                postMain { onError(t) }
             }
-        }.start()
+        }
     }
 
     private fun config() = RemoteMessage.newBuilder()
@@ -89,16 +102,23 @@ class TvRemote(
         .build().toByteArray()
 
     fun key(key: RemoteKeyCode.KeyCode) {
-        AppLogger.i("REMOTE_KEY", "sending key=" + key.name + " number=" + key.number)
-        send(
-            RemoteMessage.newBuilder()
-                .setRemoteKeyInject(
-                    RemoteKeyInject.newBuilder()
-                        .setKeyCode(key.number)
-                        .setDirection(RemoteKeyInject.Direction.SHORT)
+        ioScope.launch {
+            try {
+                AppLogger.i("REMOTE_KEY", "sending key=" + key.name + " number=" + key.number)
+                send(
+                    RemoteMessage.newBuilder()
+                        .setRemoteKeyInject(
+                            RemoteKeyInject.newBuilder()
+                                .setKeyCode(key.number)
+                                .setDirection(RemoteKeyInject.Direction.SHORT)
+                        )
+                        .build().toByteArray()
                 )
-                .build().toByteArray()
-        )
+            } catch (t: Throwable) {
+                AppLogger.e("REMOTE_KEY", "key send failed", t)
+                postMain { onError(t) }
+            }
+        }
     }
 
     fun power() = key(RemoteKeyCode.KeyCode.KEYCODE_POWER)
@@ -116,6 +136,7 @@ class TvRemote(
 
     fun stop() {
         AppLogger.i("REMOTE", "stop requested")
+        ioScope.cancel()
         try { socket?.close() } catch (_: Throwable) {}
     }
 
