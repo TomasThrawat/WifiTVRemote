@@ -31,6 +31,8 @@ class TvRemote(
     private var socket: SSLSocket? = null
     private var activeFeatures = REQUESTED_FEATURES
     private var handshakeReady = false
+    private var configureSent = false
+    private var activeSent = false
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -56,8 +58,11 @@ class TvRemote(
 
                 AppLogger.i(
                     "REMOTE",
-                    "waiting for TV RemoteConfigure before sending client configuration"
+                    "sending client RemoteConfigure requestedFeatures=" +
+                        REQUESTED_FEATURES
                 )
+                send(config(REQUESTED_FEATURES))
+                configureSent = true
 
                 while (true) {
                     val frame = Framing.read(socket!!.inputStream)
@@ -68,49 +73,56 @@ class TvRemote(
                         message.hasRemoteConfigure() -> {
                             val supported = message.remoteConfigure.code1
                             activeFeatures = REQUESTED_FEATURES and supported
+
                             AppLogger.i(
                                 "REMOTE",
-                                "received TV RemoteConfigure supportedFeatures=" + supported +
+                                "received TV RemoteConfigure supportedFeatures=" +
+                                    supported +
                                     " requestedFeatures=" + REQUESTED_FEATURES +
                                     " negotiatedFeatures=" + activeFeatures
                             )
-                            send(config(activeFeatures))
-                            AppLogger.i(
-                                "REMOTE",
-                                "sent client RemoteConfigure negotiatedFeatures=" +
-                                    activeFeatures
-                            )
+
+                            if (configureSent && !activeSent) {
+                                send(
+                                    RemoteMessage.newBuilder()
+                                        .setRemoteSetActive(
+                                            RemoteSetActive.newBuilder()
+                                                .setActive(activeFeatures)
+                                        )
+                                        .build()
+                                        .toByteArray()
+                                )
+                                activeSent = true
+                                AppLogger.i(
+                                    "REMOTE",
+                                    "sent RemoteSetActive active=" +
+                                        activeFeatures
+                                )
+                            }
                         }
 
                         message.hasRemoteSetActive() -> {
                             AppLogger.i(
                                 "REMOTE",
                                 "received RemoteSetActive active=" +
-                                    message.remoteSetActive.active +
-                                    "; replying active=" + activeFeatures
-                            )
-                            send(
-                                RemoteMessage.newBuilder()
-                                    .setRemoteSetActive(
-                                        RemoteSetActive.newBuilder()
-                                            .setActive(activeFeatures)
-                                    )
-                                    .build()
-                                    .toByteArray()
+                                    message.remoteSetActive.active
                             )
                             handshakeReady = true
                             AppLogger.i(
                                 "REMOTE",
-                                "remote handshake active; waiting for RemoteStart"
+                                "remote handshake active; connection ready"
                             )
+                            postMain(onReady)
                         }
 
                         message.hasRemoteStart() -> {
                             AppLogger.i(
                                 "REMOTE",
-                                "received RemoteStart; remote connection ready"
+                                "received RemoteStart started=" +
+                                    message.remoteStart.started
                             )
-                            if (handshakeReady) {
+                            if (activeSent && !handshakeReady) {
+                                handshakeReady = true
                                 postMain(onReady)
                             }
                         }
@@ -119,7 +131,9 @@ class TvRemote(
                             AppLogger.d(
                                 "REMOTE",
                                 "received ping request val1=" +
-                                    message.remotePingRequest.val1
+                                    message.remotePingRequest.val1 +
+                                    " val2=" +
+                                    message.remotePingRequest.val2
                             )
                             send(
                                 RemoteMessage.newBuilder()
@@ -140,11 +154,18 @@ class TvRemote(
                         }
 
                         message.hasRemoteAppLinkLaunchRequest() -> {
-                            AppLogger.i("REMOTE", "received RemoteAppLinkLaunchRequest")
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteAppLinkLaunchRequest appLink=" +
+                                    message.remoteAppLinkLaunchRequest.appLink
+                            )
                         }
 
                         message.hasRemoteSetPreferredAudioDevice() -> {
-                            AppLogger.i("REMOTE", "received RemoteSetPreferredAudioDevice")
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteSetPreferredAudioDevice"
+                            )
                         }
 
                         else -> {
@@ -189,10 +210,12 @@ class TvRemote(
                     )
                     return@launch
                 }
+
                 AppLogger.i(
                     "REMOTE_KEY",
                     "sending key=" + key.name + " number=" + key.number
                 )
+
                 send(
                     RemoteMessage.newBuilder()
                         .setRemoteKeyInject(
