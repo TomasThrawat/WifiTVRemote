@@ -30,6 +30,7 @@ class TvRemote(
 
     private var socket: SSLSocket? = null
     private var activeFeatures = REQUESTED_FEATURES
+    private var handshakeReady = false
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -53,11 +54,10 @@ class TvRemote(
                         " cipher=" + socket!!.session.cipherSuite
                 )
 
-                AppLogger.d(
+                AppLogger.i(
                     "REMOTE",
-                    "sending RemoteConfigure requestedFeatures=" + REQUESTED_FEATURES
+                    "waiting for TV RemoteConfigure before sending client configuration"
                 )
-                send(config(REQUESTED_FEATURES))
 
                 while (true) {
                     val frame = Framing.read(socket!!.inputStream)
@@ -70,11 +70,16 @@ class TvRemote(
                             activeFeatures = REQUESTED_FEATURES and supported
                             AppLogger.i(
                                 "REMOTE",
-                                "received RemoteConfigure supportedFeatures=" + supported +
+                                "received TV RemoteConfigure supportedFeatures=" + supported +
                                     " requestedFeatures=" + REQUESTED_FEATURES +
                                     " negotiatedFeatures=" + activeFeatures
                             )
                             send(config(activeFeatures))
+                            AppLogger.i(
+                                "REMOTE",
+                                "sent client RemoteConfigure negotiatedFeatures=" +
+                                    activeFeatures
+                            )
                         }
 
                         message.hasRemoteSetActive() -> {
@@ -87,12 +92,27 @@ class TvRemote(
                             send(
                                 RemoteMessage.newBuilder()
                                     .setRemoteSetActive(
-                                        RemoteSetActive.newBuilder().setActive(activeFeatures)
+                                        RemoteSetActive.newBuilder()
+                                            .setActive(activeFeatures)
                                     )
-                                    .build().toByteArray()
+                                    .build()
+                                    .toByteArray()
                             )
-                            AppLogger.i("REMOTE", "remote active; onReady")
-                            postMain(onReady)
+                            handshakeReady = true
+                            AppLogger.i(
+                                "REMOTE",
+                                "remote handshake active; waiting for RemoteStart"
+                            )
+                        }
+
+                        message.hasRemoteStart() -> {
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteStart; remote connection ready"
+                            )
+                            if (handshakeReady) {
+                                postMain(onReady)
+                            }
                         }
 
                         message.hasRemotePingRequest() -> {
@@ -107,22 +127,24 @@ class TvRemote(
                                         RemotePingResponse.newBuilder()
                                             .setVal1(message.remotePingRequest.val1)
                                     )
-                                    .build().toByteArray()
+                                    .build()
+                                    .toByteArray()
                             )
                         }
 
                         message.hasRemoteError() -> {
                             AppLogger.e(
                                 "REMOTE",
-                                "TV returned RemoteError"
+                                "TV returned RemoteError=" + message.remoteError
                             )
                         }
 
-                        message.hasRemoteStart() -> {
-                            AppLogger.i(
-                                "REMOTE",
-                                "received RemoteStart"
-                            )
+                        message.hasRemoteAppLinkLaunchRequest() -> {
+                            AppLogger.i("REMOTE", "received RemoteAppLinkLaunchRequest")
+                        }
+
+                        message.hasRemoteSetPreferredAudioDevice() -> {
+                            AppLogger.i("REMOTE", "received RemoteSetPreferredAudioDevice")
                         }
 
                         else -> {
@@ -150,15 +172,23 @@ class TvRemote(
                         .setVendor(Build.MANUFACTURER)
                         .setUnknown1(1)
                         .setUnknown2("1")
-                        .setPackageName("atvremote")
+                        .setPackageName("atvremote2")
                         .setAppVersion("1.0.0")
                 )
         )
-        .build().toByteArray()
+        .build()
+        .toByteArray()
 
     fun key(key: RemoteKeyCode.KeyCode) {
         ioScope.launch {
             try {
+                if (!handshakeReady) {
+                    AppLogger.w(
+                        "REMOTE_KEY",
+                        "ignoring key before remote handshake is ready key=" + key.name
+                    )
+                    return@launch
+                }
                 AppLogger.i(
                     "REMOTE_KEY",
                     "sending key=" + key.name + " number=" + key.number
@@ -170,7 +200,8 @@ class TvRemote(
                                 .setKeyCode(key.number)
                                 .setDirection(RemoteKeyInject.Direction.SHORT)
                         )
-                        .build().toByteArray()
+                        .build()
+                        .toByteArray()
                 )
             } catch (t: Throwable) {
                 AppLogger.e("REMOTE_KEY", "key send failed", t)
