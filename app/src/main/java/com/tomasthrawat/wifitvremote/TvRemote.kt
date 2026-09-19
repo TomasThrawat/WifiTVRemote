@@ -99,8 +99,7 @@ class TvRemote(
                             AppLogger.d(
                                 "REMOTE",
                                 "received ping request val1=" +
-                                    message.remotePingRequest.val1 +
-                                    " val2=" + message.remotePingRequest.val2
+                                    message.remotePingRequest.val1
                             )
                             send(
                                 RemoteMessage.newBuilder()
@@ -115,25 +114,14 @@ class TvRemote(
                         message.hasRemoteError() -> {
                             AppLogger.e(
                                 "REMOTE",
-                                "TV returned RemoteError value=" +
-                                    message.remoteError.value +
-                                    " nestedType=" +
-                                    message.remoteError.message.whichCase
+                                "TV returned RemoteError"
                             )
-                            if (message.remoteError.hasMessage()) {
-                                AppLogger.e(
-                                    "REMOTE",
-                                    "TV RemoteError nestedMessage=" +
-                                        message.remoteError.message
-                                )
-                            }
                         }
 
                         message.hasRemoteStart() -> {
                             AppLogger.i(
                                 "REMOTE",
-                                "received RemoteStart started=" +
-                                    message.remoteStart.started
+                                "received RemoteStart"
                             )
                         }
 
