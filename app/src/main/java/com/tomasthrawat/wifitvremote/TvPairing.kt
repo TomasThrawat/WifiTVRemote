@@ -65,6 +65,7 @@ class TvPairing(
                 PairingRequest.newBuilder()
                     .setServiceName("androidtv-remote")
                     .setClientName(Build.MODEL.ifBlank { "Wi-Fi TV Remote" })
+                    .build()
             )
             .build()
             .toByteArray()
@@ -81,6 +82,7 @@ class TvPairing(
                             .setType(PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
                             .setSymbolLength(6)
                     )
+                    .build()
             )
             .build()
             .toByteArray()
@@ -97,6 +99,7 @@ class TvPairing(
                             .setType(PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
                             .setSymbolLength(6)
                     )
+                    .build()
             )
             .build()
             .toByteArray()
@@ -115,17 +118,21 @@ class TvPairing(
             val code = raw.trim().removePrefix("0x").removePrefix("0X")
             if (code.length != 6 || code.any { it !in "0123456789abcdefABCDEF" }) return false
 
-            fun hex(n: BigInteger) = n.toString(16).padStart(512, '0')
-            fun bytes(hex: String) = ByteArray(hex.length / 2) { i ->
-                hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            fun unsigned(n: BigInteger): ByteArray {
+                val bytes = n.toByteArray()
+                return if (bytes.size > 1 && bytes[0].toInt() == 0) {
+                    bytes.copyOfRange(1, bytes.size)
+                } else {
+                    bytes
+                }
             }
 
             val digest = MessageDigest.getInstance("SHA-256")
-            digest.update(bytes(hex(clientKey.modulus)))
-            digest.update(bytes("0" + hex(clientKey.publicExponent).removePrefix("00")))
-            digest.update(bytes(hex(serverKey.modulus)))
-            digest.update(bytes("0" + hex(serverKey.publicExponent).removePrefix("00")))
-            digest.update(bytes(code))
+            digest.update(unsigned(clientKey.modulus))
+            digest.update(unsigned(clientKey.publicExponent))
+            digest.update(unsigned(serverKey.modulus))
+            digest.update(unsigned(serverKey.publicExponent))
+            digest.update(code.takeLast(4).chunked(2).map { it.toInt(16).toByte() }.toByteArray())
             val secret = digest.digest()
 
             send(
@@ -133,7 +140,9 @@ class TvPairing(
                     .setProtocolVersion(2)
                     .setStatus(PairingMessage.Status.STATUS_OK)
                     .setPairingSecret(
-                        PairingSecret.newBuilder().setSecret(ByteString.copyFrom(secret))
+                        PairingSecret.newBuilder()
+                            .setSecret(ByteString.copyFrom(secret))
+                            .build()
                     )
                     .build()
                     .toByteArray()
