@@ -148,8 +148,8 @@ class TvPairing(
     suspend fun submitCode(raw: String): Boolean = withContext(Dispatchers.IO) {
         AppLogger.i("PAIRING_CODE", "submit requested rawLength=" + raw.trim().length)
         try {
-            val id = clientIdentity ?: return false
-            val server = serverCertificate ?: return false
+            val id = clientIdentity ?: return@withContext false
+            val server = serverCertificate ?: return@withContext false
             val clientKey = id.cert.publicKey as? RSAPublicKey
                 ?: throw IllegalStateException("Client certificate is not RSA")
             val serverKey = server.publicKey as? RSAPublicKey
@@ -162,7 +162,7 @@ class TvPairing(
 
             if (code.length != 6 || code.any { it !in "0123456789ABCDEF" }) {
                 AppLogger.w("PAIRING_CODE", "rejected locally: invalid hexadecimal length=" + code.length)
-                return false
+                return@withContext false
             }
 
             fun unsigned(n: BigInteger): ByteArray {
