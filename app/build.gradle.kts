@@ -1,19 +1,21 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.protobuf")
 }
+
 android {
     namespace = "com.tomasthrawat.wifitvremote"
     compileSdk = 36
+
     defaultConfig {
         applicationId = "com.tomasthrawat.wifitvremote"
         minSdk = 23
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.0"
     }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -21,12 +23,17 @@ android {
         }
         debug { isMinifyEnabled = false }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin { jvmToolchain(17) }
+
+    kotlin {
+        jvmToolchain(17)
+    }
 }
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.08.00")
     implementation(composeBom)
@@ -40,9 +47,14 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.82")
 }
+
 protobuf {
     protoc { artifact = "com.google.protobuf:protoc:4.34.1" }
     generateProtoTasks {
-        all().configureEach { builtins { named("java") { option("lite") } } }
+        all().configureEach {
+            builtins {
+                named("java") { option("lite") }
+            }
+        }
     }
 }
