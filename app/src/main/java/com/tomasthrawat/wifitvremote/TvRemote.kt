@@ -3,7 +3,6 @@ package com.tomasthrawat.wifitvremote
 import android.os.Build
 import remote.RemoteConfigure
 import remote.RemoteDeviceInfo
-import remote.RemoteDirection
 import remote.RemoteKeyCode
 import remote.RemoteKeyInject
 import remote.RemoteMessage
@@ -33,15 +32,24 @@ class TvRemote(
                         else -> {
                             when {
                                 message.hasRemoteConfigure() -> {
-                                    send(RemoteMessage.newBuilder()
-                                        .setRemoteSetActive(RemoteSetActive.newBuilder().setActive(622))
-                                        .build().toByteArray())
+                                    send(
+                                        RemoteMessage.newBuilder()
+                                            .setRemoteSetActive(
+                                                RemoteSetActive.newBuilder().setActive(622)
+                                            )
+                                            .build().toByteArray()
+                                    )
                                     onReady()
                                 }
                                 message.hasRemotePingRequest() -> {
-                                    send(RemoteMessage.newBuilder()
-                                        .setRemotePingResponse(RemotePingResponse.newBuilder().setVal1(message.remotePingRequest.val1))
-                                        .build().toByteArray())
+                                    send(
+                                        RemoteMessage.newBuilder()
+                                            .setRemotePingResponse(
+                                                RemotePingResponse.newBuilder()
+                                                    .setVal1(message.remotePingRequest.val1)
+                                            )
+                                            .build().toByteArray()
+                                    )
                                 }
                             }
                         }
@@ -54,41 +62,53 @@ class TvRemote(
     }
 
     private fun config() = RemoteMessage.newBuilder()
-        .setRemoteConfigure(RemoteConfigure.newBuilder()
-            .setCode1(622)
-            .setDeviceInfo(RemoteDeviceInfo.newBuilder()
-                .setModel(Build.MODEL)
-                .setVendor(Build.MANUFACTURER)
-                .setUnknown1(1)
-                .setUnknown2("1")
-                .setPackageName("androidtv-remote")
-                .setAppVersion("1.0.0")))
+        .setRemoteConfigure(
+            RemoteConfigure.newBuilder()
+                .setCode1(622)
+                .setDeviceInfo(
+                    RemoteDeviceInfo.newBuilder()
+                        .setModel(Build.MODEL)
+                        .setVendor(Build.MANUFACTURER)
+                        .setUnknown1(1)
+                        .setUnknown2("1")
+                        .setPackageName("androidtv-remote")
+                        .setAppVersion("1.0.0")
+                )
+        )
         .build().toByteArray()
 
     fun key(key: RemoteKeyCode.KeyCode) {
-        send(RemoteMessage.newBuilder()
-            .setRemoteKeyInject(RemoteKeyInject.newBuilder()
-                .setKeyCode(key.number)
-                .setDirection(RemoteKeyInject.Direction.SHORT))
-            .build().toByteArray())
+        send(
+            RemoteMessage.newBuilder()
+                .setRemoteKeyInject(
+                    RemoteKeyInject.newBuilder()
+                        .setKeyCode(key.number)
+                        .setDirection(RemoteKeyInject.Direction.SHORT)
+                )
+                .build().toByteArray()
+        )
     }
 
-    fun power() = key(RemoteKeyCode.KEYCODE_POWER)
-    fun home() = key(RemoteKeyCode.KEYCODE_HOME)
-    fun back() = key(RemoteKeyCode.KEYCODE_BACK)
-    fun up() = key(RemoteKeyCode.KEYCODE_DPAD_UP)
-    fun down() = key(RemoteKeyCode.KEYCODE_DPAD_DOWN)
-    fun left() = key(RemoteKeyCode.KEYCODE_DPAD_LEFT)
-    fun right() = key(RemoteKeyCode.KEYCODE_DPAD_RIGHT)
-    fun ok() = key(RemoteKeyCode.KEYCODE_DPAD_CENTER)
-    fun volumeUp() = key(RemoteKeyCode.KEYCODE_VOLUME_UP)
-    fun volumeDown() = key(RemoteKeyCode.KEYCODE_VOLUME_DOWN)
-    fun mute() = key(RemoteKeyCode.KEYCODE_MUTE)
-    fun playPause() = key(RemoteKeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun power() = key(RemoteKeyCode.KeyCode.KEYCODE_POWER)
+    fun home() = key(RemoteKeyCode.KeyCode.KEYCODE_HOME)
+    fun back() = key(RemoteKeyCode.KeyCode.KEYCODE_BACK)
+    fun up() = key(RemoteKeyCode.KeyCode.KEYCODE_DPAD_UP)
+    fun down() = key(RemoteKeyCode.KeyCode.KEYCODE_DPAD_DOWN)
+    fun left() = key(RemoteKeyCode.KeyCode.KEYCODE_DPAD_LEFT)
+    fun right() = key(RemoteKeyCode.KeyCode.KEYCODE_DPAD_RIGHT)
+    fun ok() = key(RemoteKeyCode.KeyCode.KEYCODE_DPAD_CENTER)
+    fun volumeUp() = key(RemoteKeyCode.KeyCode.KEYCODE_VOLUME_UP)
+    fun volumeDown() = key(RemoteKeyCode.KeyCode.KEYCODE_VOLUME_DOWN)
+    fun mute() = key(RemoteKeyCode.KeyCode.KEYCODE_MUTE)
+    fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
 
-    fun stop() { try { socket?.close() } catch (_: Throwable) {} }
+    fun stop() {
+        try { socket?.close() } catch (_: Throwable) {}
+    }
 
     private fun send(bytes: ByteArray) {
-        synchronized(this) { Framing.write(socket!!.outputStream, bytes) }
+        synchronized(this) {
+            Framing.write(socket!!.outputStream, bytes)
+        }
     }
 }
