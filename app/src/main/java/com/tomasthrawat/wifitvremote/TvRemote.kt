@@ -41,32 +41,18 @@ class TvRemote(
     }
 
     fun start() {
-        AppLogger.i("REMOTE", "start host=" + host + " port=6466")
         ioScope.launch {
             try {
                 socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
-                AppLogger.i("REMOTE", "connecting TLS port=6466 timeoutMs=8000")
                 socket!!.connect(InetSocketAddress(host, 6466), 8000)
                 socket!!.useClientMode = true
-                AppLogger.i("REMOTE", "TLS handshake starting")
                 socket!!.startHandshake()
-                AppLogger.i(
-                    "REMOTE",
-                    "TLS handshake complete protocol=" + socket!!.session.protocol +
-                        " cipher=" + socket!!.session.cipherSuite
-                )
 
-                AppLogger.i(
-                    "REMOTE",
-                    "sending client RemoteConfigure requestedFeatures=" +
-                        REQUESTED_FEATURES
-                )
                 send(config(REQUESTED_FEATURES))
                 configureSent = true
 
                 while (true) {
                     val frame = Framing.read(socket!!.inputStream)
-                    AppLogger.d("REMOTE", "received frame bytes=" + frame.size)
                     val message = RemoteMessage.parseFrom(frame)
 
                     when {
@@ -74,13 +60,6 @@ class TvRemote(
                             val supported = message.remoteConfigure.code1
                             activeFeatures = REQUESTED_FEATURES and supported
 
-                            AppLogger.i(
-                                "REMOTE",
-                                "received TV RemoteConfigure supportedFeatures=" +
-                                    supported +
-                                    " requestedFeatures=" + REQUESTED_FEATURES +
-                                    " negotiatedFeatures=" + activeFeatures
-                            )
 
                             if (configureSent && !activeSent) {
                                 send(
@@ -93,34 +72,15 @@ class TvRemote(
                                         .toByteArray()
                                 )
                                 activeSent = true
-                                AppLogger.i(
-                                    "REMOTE",
-                                    "sent RemoteSetActive active=" +
-                                        activeFeatures
-                                )
                             }
                         }
 
                         message.hasRemoteSetActive() -> {
-                            AppLogger.i(
-                                "REMOTE",
-                                "received RemoteSetActive active=" +
-                                    message.remoteSetActive.active
-                            )
                             handshakeReady = true
-                            AppLogger.i(
-                                "REMOTE",
-                                "remote handshake active; connection ready"
-                            )
                             postMain(onReady)
                         }
 
                         message.hasRemoteStart() -> {
-                            AppLogger.i(
-                                "REMOTE",
-                                "received RemoteStart started=" +
-                                    "received RemoteStart"
-                            )
                             if (activeSent && !handshakeReady) {
                                 handshakeReady = true
                                 postMain(onReady)
@@ -128,11 +88,6 @@ class TvRemote(
                         }
 
                         message.hasRemotePingRequest() -> {
-                            AppLogger.d(
-                                "REMOTE",
-                                "received ping request val1=" +
-                                    message.remotePingRequest.val1
-                            )
                             send(
                                 RemoteMessage.newBuilder()
                                     .setRemotePingResponse(
@@ -145,37 +100,19 @@ class TvRemote(
                         }
 
                         message.hasRemoteError() -> {
-                            AppLogger.e(
-                                "REMOTE",
-                                "TV returned RemoteError=" + message.remoteError
-                            )
                         }
 
                         message.hasRemoteAppLinkLaunchRequest() -> {
-                            AppLogger.i(
-                                "REMOTE",
-                                "received RemoteAppLinkLaunchRequest appLink=" +
-                                    message.remoteAppLinkLaunchRequest.appLink
-                            )
                         }
 
                         message.hasRemoteSetPreferredAudioDevice() -> {
-                            AppLogger.i(
-                                "REMOTE",
-                                "received RemoteSetPreferredAudioDevice"
-                            )
                         }
 
                         else -> {
-                            AppLogger.w(
-                                "REMOTE",
-                                "received unhandled RemoteMessage=" + message
-                            )
                         }
                     }
                 }
             } catch (t: Throwable) {
-                AppLogger.e("REMOTE", "remote thread failed", t)
                 postMain { onError(t) }
             }
         }
@@ -202,17 +139,9 @@ class TvRemote(
         ioScope.launch {
             try {
                 if (!handshakeReady) {
-                    AppLogger.w(
-                        "REMOTE_KEY",
-                        "ignoring key before remote handshake is ready key=" + key.name
-                    )
                     return@launch
                 }
 
-                AppLogger.i(
-                    "REMOTE_KEY",
-                    "sending key=" + key.name + " number=" + key.number
-                )
 
                 send(
                     RemoteMessage.newBuilder()
@@ -225,7 +154,6 @@ class TvRemote(
                         .toByteArray()
                 )
             } catch (t: Throwable) {
-                AppLogger.e("REMOTE_KEY", "key send failed", t)
                 postMain { onError(t) }
             }
         }
@@ -245,7 +173,6 @@ class TvRemote(
     fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
 
     fun stop() {
-        AppLogger.i("REMOTE", "stop requested")
         ioScope.cancel()
         try {
             socket?.close()
@@ -255,7 +182,6 @@ class TvRemote(
 
     private fun send(bytes: ByteArray) {
         synchronized(this) {
-            AppLogger.d("REMOTE_IO", "send frame bytes=" + bytes.size)
             Framing.write(socket!!.outputStream, bytes)
         }
     }

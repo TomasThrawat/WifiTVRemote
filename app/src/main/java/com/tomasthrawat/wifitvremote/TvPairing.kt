@@ -39,34 +39,25 @@ class TvPairing(
     }
 
     fun start() {
-        AppLogger.i("PAIRING", "start host=" + host + " port=6467")
         Thread {
             try {
                 val id = CertificateStore.loadOrCreate(context, host)
                 clientIdentity = id
-                AppLogger.i("PAIRING", "client identity loaded")
 
                 val s = Tls.context(id).socketFactory.createSocket() as SSLSocket
                 socket = s
-                AppLogger.i("PAIRING", "connecting TLS port=6467 timeoutMs=8000")
                 s.connect(InetSocketAddress(host, 6467), 8000)
                 s.useClientMode = true
-                AppLogger.i("PAIRING", "TLS handshake starting")
                 s.startHandshake()
-                AppLogger.i("PAIRING", "TLS handshake complete protocol=" + s.session.protocol + " cipher=" + s.session.cipherSuite)
 
                 serverCertificate = s.session.peerCertificates.firstOrNull() as? X509Certificate
                     ?: throw IllegalStateException("TV did not provide an X.509 certificate")
-                AppLogger.i("PAIRING", "server certificate received algorithm=" + serverCertificate!!.publicKey.algorithm)
 
-                AppLogger.d("PAIRING", "sending PairingRequest")
                 send(request())
 
                 while (true) {
                     val frame = Framing.read(s.inputStream)
-                    AppLogger.d("PAIRING", "received frame bytes=" + frame.size)
                     val message = PairingMessage.parseFrom(frame)
-                    AppLogger.d("PAIRING", "status=" + message.status + " requestAck=" + message.hasPairingRequestAck() + " option=" + message.hasPairingOption() + " configAck=" + message.hasPairingConfigurationAck() + " secretAck=" + message.hasPairingSecretAck())
 
                     when {
                         message.status == PairingMessage.Status.STATUS_BAD_SECRET ->
@@ -75,12 +66,11 @@ class TvPairing(
                         message.status != PairingMessage.Status.STATUS_OK ->
                             throw IllegalStateException("TV status: " + message.status)
 
-                        message.hasPairingRequestAck() -> { AppLogger.d("PAIRING", "request acknowledged; sending option"); send(option()) }
-                        message.hasPairingOption() -> { AppLogger.d("PAIRING", "option received; sending configuration"); send(config()) }
-                        message.hasPairingConfigurationAck() -> { AppLogger.i("PAIRING", "configuration acknowledged; waiting for user code"); postMain(onCode) }
+                        message.hasPairingRequestAck() -> {  send(option()) }
+                        message.hasPairingOption() -> {  send(config()) }
+                        message.hasPairingConfigurationAck() -> {  postMain(onCode) }
 
                         message.hasPairingSecretAck() -> {
-                            AppLogger.i("PAIRING", "secret acknowledged; pairing successful")
                             s.close()
                             postMain { onPaired(id) }
                             return@Thread
@@ -88,7 +78,6 @@ class TvPairing(
                     }
                 }
             } catch (t: Throwable) {
-                AppLogger.e("PAIRING", "pairing thread failed", t)
                 postMain { onError(t) }
             }
         }.start()
@@ -146,7 +135,6 @@ class TvPairing(
     }
 
     suspend fun submitCode(raw: String): Boolean = withContext(Dispatchers.IO) {
-        AppLogger.i("PAIRING_CODE", "submit requested rawLength=" + raw.trim().length)
         try {
             val id = clientIdentity ?: return@withContext false
             val server = serverCertificate ?: return@withContext false
@@ -161,7 +149,6 @@ class TvPairing(
                 .uppercase()
 
             if (code.length != 6 || code.any { it !in "0123456789ABCDEF" }) {
-                AppLogger.w("PAIRING_CODE", "rejected locally: invalid hexadecimal length=" + code.length)
                 return@withContext false
             }
 
@@ -191,15 +178,12 @@ class TvPairing(
             digest.update(exponentBytes(serverKey))
             digest.update(pinBytes)
             val secret = digest.digest()
-            AppLogger.d("PAIRING_CODE", "pairing hash computed bytes=" + secret.size)
 
             val expectedFirstByte = code.substring(0, 2).toInt(16)
             if ((secret[0].toInt() and 0xFF) != expectedFirstByte) {
-                AppLogger.w("PAIRING_CODE", "hash mismatch expectedPrefix=" + code.substring(0, 2) + " actualPrefix=" + String.format("%02X", secret[0].toInt() and 0xFF))
                 throw IllegalArgumentException("Pairing code does not match the TLS certificates")
             }
 
-            AppLogger.i("PAIRING_CODE", "hash verified; sending PairingSecret bytes=" + secret.size)
             send(
                 PairingMessage.newBuilder()
                     .setProtocolVersion(2)
@@ -214,14 +198,12 @@ class TvPairing(
             )
             true
         } catch (t: Throwable) {
-            AppLogger.e("PAIRING_CODE", "submit failed", t)
             postMain { onError(t) }
             false
         }
     }
 
     fun stop() {
-        AppLogger.i("PAIRING", "stop requested")
         try {
             socket?.close()
         } catch (_: Throwable) {

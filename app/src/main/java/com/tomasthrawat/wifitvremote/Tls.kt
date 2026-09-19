@@ -7,7 +7,6 @@ import javax.net.ssl.*
 
 object Tls {
     fun context(id: ClientIdentity): SSLContext {
-        AppLogger.d("TLS", "creating TLS context keyAlgorithm=" + id.cert.publicKey.algorithm)
         val ks = KeyStore.getInstance("PKCS12")
         ks.load(null, null)
         val pass = "wifitv".toCharArray()
