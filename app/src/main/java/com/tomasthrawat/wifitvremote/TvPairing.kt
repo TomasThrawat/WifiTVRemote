@@ -49,13 +49,11 @@ class TvPairing(
                     val message = PairingMessage.parseFrom(Framing.read(s.inputStream))
 
                     when {
-                        message.status == PairingMessage.Status.STATUS_BAD_SECRET -> {
+                        message.status == PairingMessage.Status.STATUS_BAD_SECRET ->
                             throw IllegalStateException("TV rejected the pairing secret")
-                        }
 
-                        message.status != PairingMessage.Status.STATUS_OK -> {
+                        message.status != PairingMessage.Status.STATUS_OK ->
                             throw IllegalStateException("TV status: " + message.status)
-                        }
 
                         message.hasPairingRequestAck() -> send(option())
                         message.hasPairingOption() -> send(config())
@@ -150,16 +148,21 @@ class TvPairing(
                 }
             }
 
-            val lastFour = code.substring(2)
-            val pinBytes = ByteArray(2) {
-                lastFour.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+            fun exponentBytes(key: RSAPublicKey): ByteArray {
+                val exponent = unsigned(key.publicExponent)
+                return byteArrayOf(0) + exponent
             }
+
+            val pinBytes = code.substring(2)
+                .chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray()
 
             val digest = MessageDigest.getInstance("SHA-256")
             digest.update(unsigned(clientKey.modulus))
-            digest.update(unsigned(clientKey.publicExponent))
+            digest.update(exponentBytes(clientKey))
             digest.update(unsigned(serverKey.modulus))
-            digest.update(unsigned(serverKey.publicExponent))
+            digest.update(exponentBytes(serverKey))
             digest.update(pinBytes)
             val secret = digest.digest()
 
