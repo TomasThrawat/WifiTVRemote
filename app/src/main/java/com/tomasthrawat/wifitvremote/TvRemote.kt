@@ -1,6 +1,8 @@
 package com.tomasthrawat.wifitvremote
 
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import remote.RemoteConfigure
 import remote.RemoteDeviceInfo
 import remote.RemoteKeyCode
@@ -9,14 +11,12 @@ import remote.RemoteMessage
 import remote.RemotePingResponse
 import remote.RemoteSetActive
 import java.net.InetSocketAddress
-import android.os.Handler
-import android.os.Looper
+import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import javax.net.ssl.SSLSocket
 
 class TvRemote(
     private val host: String,
@@ -24,7 +24,12 @@ class TvRemote(
     private val onReady: () -> Unit,
     private val onError: (Throwable) -> Unit
 ) {
+    companion object {
+        private const val REQUESTED_FEATURES = 622
+    }
+
     private var socket: SSLSocket? = null
+    private var activeFeatures = REQUESTED_FEATURES
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -42,43 +47,101 @@ class TvRemote(
                 socket!!.useClientMode = true
                 AppLogger.i("REMOTE", "TLS handshake starting")
                 socket!!.startHandshake()
-                AppLogger.i("REMOTE", "TLS handshake complete protocol=" + socket!!.session.protocol + " cipher=" + socket!!.session.cipherSuite)
-                AppLogger.d("REMOTE", "sending RemoteConfigure")
-                send(config())
+                AppLogger.i(
+                    "REMOTE",
+                    "TLS handshake complete protocol=" + socket!!.session.protocol +
+                        " cipher=" + socket!!.session.cipherSuite
+                )
+
+                AppLogger.d(
+                    "REMOTE",
+                    "sending RemoteConfigure requestedFeatures=" + REQUESTED_FEATURES
+                )
+                send(config(REQUESTED_FEATURES))
+
                 while (true) {
                     val frame = Framing.read(socket!!.inputStream)
                     AppLogger.d("REMOTE", "received frame bytes=" + frame.size)
-                    when (val message = RemoteMessage.parseFrom(frame)) {
-                        else -> {
-                            when {
-                                message.hasRemoteConfigure() -> {
-                                    AppLogger.i("REMOTE", "received RemoteConfigure; replying with RemoteConfigure")
-                                    send(config())
-                                }
-                                message.hasRemoteSetActive() -> {
-                                    AppLogger.i("REMOTE", "received RemoteSetActive; replying with active=622")
-                                    send(
-                                        RemoteMessage.newBuilder()
-                                            .setRemoteSetActive(
-                                                RemoteSetActive.newBuilder().setActive(622)
-                                            )
-                                            .build().toByteArray()
+                    val message = RemoteMessage.parseFrom(frame)
+
+                    when {
+                        message.hasRemoteConfigure() -> {
+                            val supported = message.remoteConfigure.code1
+                            activeFeatures = REQUESTED_FEATURES and supported
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteConfigure supportedFeatures=" + supported +
+                                    " requestedFeatures=" + REQUESTED_FEATURES +
+                                    " negotiatedFeatures=" + activeFeatures
+                            )
+                            send(config(activeFeatures))
+                        }
+
+                        message.hasRemoteSetActive() -> {
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteSetActive active=" +
+                                    message.remoteSetActive.active +
+                                    "; replying active=" + activeFeatures
+                            )
+                            send(
+                                RemoteMessage.newBuilder()
+                                    .setRemoteSetActive(
+                                        RemoteSetActive.newBuilder().setActive(activeFeatures)
                                     )
-                                    AppLogger.i("REMOTE", "remote active; onReady")
-                                    postMain(onReady)
-                                }
-                                message.hasRemotePingRequest() -> {
-                                    AppLogger.d("REMOTE", "received ping request; replying")
-                                    send(
-                                        RemoteMessage.newBuilder()
-                                            .setRemotePingResponse(
-                                                RemotePingResponse.newBuilder()
-                                                    .setVal1(message.remotePingRequest.val1)
-                                            )
-                                            .build().toByteArray()
+                                    .build().toByteArray()
+                            )
+                            AppLogger.i("REMOTE", "remote active; onReady")
+                            postMain(onReady)
+                        }
+
+                        message.hasRemotePingRequest() -> {
+                            AppLogger.d(
+                                "REMOTE",
+                                "received ping request val1=" +
+                                    message.remotePingRequest.val1 +
+                                    " val2=" + message.remotePingRequest.val2
+                            )
+                            send(
+                                RemoteMessage.newBuilder()
+                                    .setRemotePingResponse(
+                                        RemotePingResponse.newBuilder()
+                                            .setVal1(message.remotePingRequest.val1)
                                     )
-                                }
+                                    .build().toByteArray()
+                            )
+                        }
+
+                        message.hasRemoteError() -> {
+                            AppLogger.e(
+                                "REMOTE",
+                                "TV returned RemoteError value=" +
+                                    message.remoteError.value +
+                                    " nestedType=" +
+                                    message.remoteError.message.whichCase
+                            )
+                            if (message.remoteError.hasMessage()) {
+                                AppLogger.e(
+                                    "REMOTE",
+                                    "TV RemoteError nestedMessage=" +
+                                        message.remoteError.message
+                                )
                             }
+                        }
+
+                        message.hasRemoteStart() -> {
+                            AppLogger.i(
+                                "REMOTE",
+                                "received RemoteStart started=" +
+                                    message.remoteStart.started
+                            )
+                        }
+
+                        else -> {
+                            AppLogger.w(
+                                "REMOTE",
+                                "received unhandled RemoteMessage=" + message
+                            )
                         }
                     }
                 }
@@ -89,17 +152,17 @@ class TvRemote(
         }
     }
 
-    private fun config() = RemoteMessage.newBuilder()
+    private fun config(features: Int) = RemoteMessage.newBuilder()
         .setRemoteConfigure(
             RemoteConfigure.newBuilder()
-                .setCode1(622)
+                .setCode1(features)
                 .setDeviceInfo(
                     RemoteDeviceInfo.newBuilder()
                         .setModel(Build.MODEL)
                         .setVendor(Build.MANUFACTURER)
                         .setUnknown1(1)
                         .setUnknown2("1")
-                        .setPackageName("androidtv-remote")
+                        .setPackageName("atvremote")
                         .setAppVersion("1.0.0")
                 )
         )
@@ -108,7 +171,10 @@ class TvRemote(
     fun key(key: RemoteKeyCode.KeyCode) {
         ioScope.launch {
             try {
-                AppLogger.i("REMOTE_KEY", "sending key=" + key.name + " number=" + key.number)
+                AppLogger.i(
+                    "REMOTE_KEY",
+                    "sending key=" + key.name + " number=" + key.number
+                )
                 send(
                     RemoteMessage.newBuilder()
                         .setRemoteKeyInject(
@@ -141,7 +207,10 @@ class TvRemote(
     fun stop() {
         AppLogger.i("REMOTE", "stop requested")
         ioScope.cancel()
-        try { socket?.close() } catch (_: Throwable) {}
+        try {
+            socket?.close()
+        } catch (_: Throwable) {
+        }
     }
 
     private fun send(bytes: ByteArray) {
