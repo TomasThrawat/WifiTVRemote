@@ -13,6 +13,7 @@ import pairing.RoleType
 import java.math.BigInteger
 import java.net.InetSocketAddress
 import java.security.MessageDigest
+import java.security.cert.X509Certificate
 import java.security.interfaces.RSAPublicKey
 import javax.net.ssl.SSLSocket
 
@@ -24,28 +25,44 @@ class TvPairing(
     private val onError: (Throwable) -> Unit
 ) {
     private var socket: SSLSocket? = null
+    private var clientIdentity: ClientIdentity? = null
+    private var serverCertificate: X509Certificate? = null
 
     fun start() {
         Thread {
             try {
                 val id = CertificateStore.loadOrCreate(context, host)
-                socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
-                socket!!.connect(InetSocketAddress(host, 6467), 8000)
-                socket!!.useClientMode = true
-                socket!!.startHandshake()
+                clientIdentity = id
+
+                val s = Tls.context(id).socketFactory.createSocket() as SSLSocket
+                socket = s
+                s.connect(InetSocketAddress(host, 6467), 8000)
+                s.useClientMode = true
+                s.startHandshake()
+
+                serverCertificate = s.session.peerCertificates.firstOrNull() as? X509Certificate
+                    ?: throw IllegalStateException("TV did not provide an X.509 certificate")
+
                 send(request())
 
                 while (true) {
-                    val message = PairingMessage.parseFrom(Framing.read(socket!!.inputStream))
-                    if (message.status != PairingMessage.Status.STATUS_OK) {
-                        throw IllegalStateException("TV status: " + message.status)
-                    }
+                    val message = PairingMessage.parseFrom(Framing.read(s.inputStream))
+
                     when {
+                        message.status == PairingMessage.Status.STATUS_BAD_SECRET -> {
+                            throw IllegalStateException("TV rejected the pairing secret")
+                        }
+
+                        message.status != PairingMessage.Status.STATUS_OK -> {
+                            throw IllegalStateException("TV status: " + message.status)
+                        }
+
                         message.hasPairingRequestAck() -> send(option())
                         message.hasPairingOption() -> send(config())
                         message.hasPairingConfigurationAck() -> onCode()
+
                         message.hasPairingSecretAck() -> {
-                            socket!!.close()
+                            s.close()
                             onPaired(id)
                             return@Thread
                         }
@@ -110,16 +127,22 @@ class TvPairing(
 
     fun submitCode(raw: String): Boolean {
         return try {
-            val s = socket ?: return false
-            val local = s.session.localCertificates.first() as java.security.cert.X509Certificate
-            val server = s.session.peerCertificates.first() as java.security.cert.X509Certificate
-            val clientKey = local.publicKey as RSAPublicKey
-            val serverKey = server.publicKey as RSAPublicKey
-            val code = raw.trim().removePrefix("0x").removePrefix("0X")
-            if (code.length != 6 || code.any { it !in "0123456789abcdefABCDEF" }) return false
+            val id = clientIdentity ?: return false
+            val server = serverCertificate ?: return false
+            val clientKey = id.cert.publicKey as? RSAPublicKey
+                ?: throw IllegalStateException("Client certificate is not RSA")
+            val serverKey = server.publicKey as? RSAPublicKey
+                ?: throw IllegalStateException("TV certificate is not RSA")
+
+            val code = raw.trim()
+                .removePrefix("0x")
+                .removePrefix("0X")
+                .uppercase()
+
+            if (code.length != 6 || code.any { it !in "0123456789ABCDEF" }) return false
 
             fun unsigned(n: BigInteger): ByteArray {
-                val bytes = n.toByteArray()
+                val bytes = n.abs().toByteArray()
                 return if (bytes.size > 1 && bytes[0].toInt() == 0) {
                     bytes.copyOfRange(1, bytes.size)
                 } else {
@@ -127,13 +150,23 @@ class TvPairing(
                 }
             }
 
+            val lastFour = code.substring(2)
+            val pinBytes = ByteArray(2) {
+                lastFour.substring(it * 2, it * 2 + 2).toInt(16).toByte()
+            }
+
             val digest = MessageDigest.getInstance("SHA-256")
             digest.update(unsigned(clientKey.modulus))
             digest.update(unsigned(clientKey.publicExponent))
             digest.update(unsigned(serverKey.modulus))
             digest.update(unsigned(serverKey.publicExponent))
-            digest.update(code.takeLast(4).chunked(2).map { it.toInt(16).toByte() }.toByteArray())
+            digest.update(pinBytes)
             val secret = digest.digest()
+
+            val expectedFirstByte = code.substring(0, 2).toInt(16)
+            if ((secret[0].toInt() and 0xFF) != expectedFirstByte) {
+                throw IllegalArgumentException("Pairing code does not match the TLS certificates")
+            }
 
             send(
                 PairingMessage.newBuilder()
@@ -155,6 +188,9 @@ class TvPairing(
     }
 
     fun stop() {
-        try { socket?.close() } catch (_: Throwable) {}
+        try {
+            socket?.close()
+        } catch (_: Throwable) {
+        }
     }
 }
