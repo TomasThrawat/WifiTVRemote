@@ -150,7 +150,7 @@ class TvPairing(
 
             fun exponentBytes(key: RSAPublicKey): ByteArray {
                 val exponent = unsigned(key.publicExponent)
-                return byteArrayOf(0) + exponent
+                return exponent
             }
 
             val pinBytes = code.substring(2)
