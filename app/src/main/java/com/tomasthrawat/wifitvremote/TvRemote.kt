@@ -52,7 +52,11 @@ class TvRemote(
                         else -> {
                             when {
                                 message.hasRemoteConfigure() -> {
-                                    AppLogger.i("REMOTE", "received RemoteConfigure; activating remote")
+                                    AppLogger.i("REMOTE", "received RemoteConfigure; replying with RemoteConfigure")
+                                    send(config())
+                                }
+                                message.hasRemoteSetActive() -> {
+                                    AppLogger.i("REMOTE", "received RemoteSetActive; replying with active=622")
                                     send(
                                         RemoteMessage.newBuilder()
                                             .setRemoteSetActive(
