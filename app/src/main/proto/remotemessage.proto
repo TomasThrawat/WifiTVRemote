@@ -45,15 +45,19 @@ message RemoteKeyCode {
     KEYCODE_VOLUME_UP = 24;
     KEYCODE_VOLUME_DOWN = 25;
     KEYCODE_POWER = 26;
-    KEYCODE_MUTE = 164;
+    KEYCODE_MUTE = 91;
     KEYCODE_MEDIA_PLAY_PAUSE = 85;
   }
 }
 
 message RemoteConfigure { int32 code1 = 1; RemoteDeviceInfo device_info = 2; }
 message RemoteDeviceInfo {
-  string model = 1; string vendor = 2; int32 unknown1 = 3;
-  string unknown2 = 4; string package_name = 5; string app_version = 6;
+  string model = 1;
+  string vendor = 2;
+  int32 unknown1 = 3;
+  string unknown2 = 4;
+  string package_name = 5;
+  string app_version = 6;
 }
 message RemoteSetActive { int32 active = 1; }
 message RemotePingRequest { int32 val1 = 1; }
@@ -61,16 +65,16 @@ message RemotePingResponse { int32 val1 = 1; }
 
 message RemoteMessage {
   oneof message {
-    RemoteAppLinkLaunchRequest remote_app_link_launch_request = 1;
-    RemoteResetPreferredAudioDevice remote_reset_preferred_audio_device = 2;
-    RemoteSetPreferredAudioDevice remote_set_preferred_audio_device = 3;
-    RemoteAdjustVolumeLevel remote_adjust_volume_level = 4;
-    RemoteSetVolumeLevel remote_set_volume_level = 5;
-    RemoteStartScan remote_start_scan = 6;
-    RemoteStopScan remote_stop_scan = 7;
-    RemoteConnect remote_connect = 8;
-    RemoteDisconnect remote_disconnect = 9;
-    RemoteError remote_error = 10;
+    RemoteAppLinkLaunchRequest remote_app_link_launch_request = 90;
+    RemoteResetPreferredAudioDevice remote_reset_preferred_audio_device = 60;
+    RemoteSetPreferredAudioDevice remote_set_preferred_audio_device = 61;
+    RemoteAdjustVolumeLevel remote_adjust_volume_level = 50;
+    RemoteSetVolumeLevel remote_set_volume_level = 51;
+    RemoteStartScan remote_start_scan = 52;
+    RemoteStopScan remote_stop_scan = 53;
+    RemoteConnect remote_connect = 80;
+    RemoteDisconnect remote_disconnect = 81;
+    RemoteError remote_error = 20;
     RemoteImeBatchEdit remote_ime_batch_edit = 11;
     RemoteImeKeyEvent remote_ime_key_event = 12;
     RemoteImeShowRequest remote_ime_show_request = 13;
@@ -80,13 +84,13 @@ message RemoteMessage {
     RemoteImeAction remote_ime_action = 17;
     RemoteVoiceBegin remote_voice_begin = 18;
     RemoteVoicePayload remote_voice_payload = 19;
-    RemoteVoiceEnd remote_voice_end = 20;
-    RemoteStart remote_start = 21;
-    RemoteStop remote_stop = 22;
-    RemoteKeyInject remote_key_inject = 23;
-    RemoteConfigure remote_configure = 24;
-    RemoteSetActive remote_set_active = 25;
-    RemotePingRequest remote_ping_request = 26;
-    RemotePingResponse remote_ping_response = 27;
+    RemoteVoiceEnd remote_voice_end = 21;
+    RemoteStart remote_start = 40;
+    RemoteStop remote_stop = 41;
+    RemoteKeyInject remote_key_inject = 10;
+    RemoteConfigure remote_configure = 1;
+    RemoteSetActive remote_set_active = 2;
+    RemotePingRequest remote_ping_request = 8;
+    RemotePingResponse remote_ping_response = 9;
   }
 }
