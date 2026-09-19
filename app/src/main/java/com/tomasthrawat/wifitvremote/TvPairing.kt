@@ -3,7 +3,13 @@ package com.tomasthrawat.wifitvremote
 import android.content.Context
 import android.os.Build
 import com.google.protobuf.ByteString
+import pairing.PairingConfiguration
+import pairing.PairingEncoding
 import pairing.PairingMessage
+import pairing.PairingOption
+import pairing.PairingRequest
+import pairing.PairingSecret
+import pairing.RoleType
 import java.math.BigInteger
 import java.net.InetSocketAddress
 import java.security.MessageDigest
@@ -56,7 +62,7 @@ class TvPairing(
             .setProtocolVersion(2)
             .setStatus(PairingMessage.Status.STATUS_OK)
             .setPairingRequest(
-                PairingMessage.PairingRequest.newBuilder()
+                PairingRequest.newBuilder()
                     .setServiceName("androidtv-remote")
                     .setClientName(Build.MODEL.ifBlank { "Wi-Fi TV Remote" })
             )
@@ -68,11 +74,11 @@ class TvPairing(
             .setProtocolVersion(2)
             .setStatus(PairingMessage.Status.STATUS_OK)
             .setPairingOption(
-                PairingMessage.PairingOption.newBuilder()
-                    .setPreferredRole(PairingMessage.RoleType.ROLE_TYPE_INPUT)
+                PairingOption.newBuilder()
+                    .setPreferredRole(RoleType.ROLE_TYPE_INPUT)
                     .addInputEncodings(
-                        PairingMessage.PairingEncoding.newBuilder()
-                            .setType(PairingMessage.PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
+                        PairingEncoding.newBuilder()
+                            .setType(PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
                             .setSymbolLength(6)
                     )
             )
@@ -84,11 +90,11 @@ class TvPairing(
             .setProtocolVersion(2)
             .setStatus(PairingMessage.Status.STATUS_OK)
             .setPairingConfiguration(
-                PairingMessage.PairingConfiguration.newBuilder()
-                    .setClientRole(PairingMessage.RoleType.ROLE_TYPE_INPUT)
+                PairingConfiguration.newBuilder()
+                    .setClientRole(RoleType.ROLE_TYPE_INPUT)
                     .setEncoding(
-                        PairingMessage.PairingEncoding.newBuilder()
-                            .setType(PairingMessage.PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
+                        PairingEncoding.newBuilder()
+                            .setType(PairingEncoding.EncodingType.ENCODING_TYPE_HEXADECIMAL)
                             .setSymbolLength(6)
                     )
             )
@@ -110,10 +116,9 @@ class TvPairing(
             if (code.length != 6 || code.any { it !in "0123456789abcdefABCDEF" }) return false
 
             fun hex(n: BigInteger) = n.toString(16).padStart(512, '0')
-            fun bytes(hex: String) =
-                ByteArray(hex.length / 2) { i ->
-                    hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-                }
+            fun bytes(hex: String) = ByteArray(hex.length / 2) { i ->
+                hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+            }
 
             val digest = MessageDigest.getInstance("SHA-256")
             digest.update(bytes(hex(clientKey.modulus)))
@@ -130,8 +135,7 @@ class TvPairing(
                     .setProtocolVersion(2)
                     .setStatus(PairingMessage.Status.STATUS_OK)
                     .setPairingSecret(
-                        PairingMessage.PairingSecret.newBuilder()
-                            .setSecret(ByteString.copyFrom(secret))
+                        PairingSecret.newBuilder().setSecret(ByteString.copyFrom(secret))
                     )
                     .build()
                     .toByteArray()
@@ -144,9 +148,6 @@ class TvPairing(
     }
 
     fun stop() {
-        try {
-            socket?.close()
-        } catch (_: Throwable) {
-        }
+        try { socket?.close() } catch (_: Throwable) {}
     }
 }

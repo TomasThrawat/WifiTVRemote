@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.tomasthrawat.wifitvremote"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.tomasthrawat.wifitvremote"

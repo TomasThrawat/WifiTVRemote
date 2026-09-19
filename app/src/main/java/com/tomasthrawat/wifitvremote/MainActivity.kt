@@ -58,13 +58,14 @@ private fun Screen() {
 
     fun connect(device: TvDevice) {
         status = "جاري الاتصال بـ " + device.name + "..."
+        lateinit var r: TvRemote
         val p = TvPairing(
             context = context,
             host = device.host,
             onCode = { status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
             onPaired = { identity ->
                 status = "تم الاقتران. جاري الاتصال..."
-                val r = TvRemote(
+                r = TvRemote(
                     host = device.host,
                     id = identity,
                     onReady = {
@@ -111,11 +112,8 @@ private fun Screen() {
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)
-                ) {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("التحكم المحلي", style = MaterialTheme.typography.headlineSmall)
                         Text("اتصال مباشر عبر Wi‑Fi. بدون Bluetooth أو ADB أو خادم سحابي.")
@@ -123,23 +121,14 @@ private fun Screen() {
                     }
                 }
             }
-            item {
-                Button({ scan() }, Modifier.fillMaxWidth()) {
-                    Text("البحث عن أجهزة التلفزيون")
-                }
-            }
+            item { Button({ scan() }, Modifier.fillMaxWidth()) { Text("البحث عن أجهزة التلفزيون") } }
             items(devices, key = { it.host }) { device ->
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
-                ) {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large,
+                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(device.name, style = MaterialTheme.typography.titleMedium)
                         Text(device.host, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FilledTonalButton({ connect(device) }, Modifier.fillMaxWidth()) {
-                            Text("اتصال")
-                        }
+                        FilledTonalButton({ connect(device) }, Modifier.fillMaxWidth()) { Text("اتصال") }
                     }
                 }
             }
@@ -148,28 +137,17 @@ private fun Screen() {
                     Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("إقران التلفزيون", style = MaterialTheme.typography.titleLarge)
-                            OutlinedTextField(
-                                value = code,
-                                onValueChange = { code = it.take(6) },
-                                label = { Text("رمز الاقتران") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Button(
-                                onClick = {
-                                    if (p.submitCode(code)) status = "تم إرسال الرمز. انتظار التلفزيون..."
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("تأكيد الرمز")
-                            }
+                            OutlinedTextField(value = code, onValueChange = { code = it.take(6) },
+                                label = { Text("رمز الاقتران") }, singleLine = true,
+                                modifier = Modifier.fillMaxWidth())
+                            Button(onClick = {
+                                if (p.submitCode(code)) status = "تم إرسال الرمز. انتظار التلفزيون..."
+                            }, modifier = Modifier.fillMaxWidth()) { Text("تأكيد الرمز") }
                         }
                     }
                 }
             }
-            if (connected && remote != null) {
-                item { RemoteControls(remote!!) }
-            }
+            if (connected && remote != null) item { RemoteControls(remote!!) }
         }
     }
 }
@@ -183,23 +161,16 @@ private fun RemoteControls(remote: TvRemote) {
             OutlinedButton({ remote.home() }, Modifier.weight(1f)) { Text("Home") }
             OutlinedButton({ remote.back() }, Modifier.weight(1f)) { Text("Back") }
         }
-        Card(
-            Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
-        ) {
+        Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), Arrangement.Center) {
-                    FilledTonalButton({ remote.up() }) { Text("↑") }
-                }
+                Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.up() }) { Text("↑") } }
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
                     FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
                     FilledTonalButton({ remote.right() }, Modifier.weight(1f)) { Text("→") }
                 }
-                Row(Modifier.fillMaxWidth(), Arrangement.Center) {
-                    FilledTonalButton({ remote.down() }) { Text("↓") }
-                }
+                Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.down() }) { Text("↓") } }
             }
         }
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
