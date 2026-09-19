@@ -49,18 +49,42 @@ private fun Screen() {
         devices.clear()
         status = "جاري البحث..."
         scope.launch {
-            discovery.scan().collect { d ->
-                if (devices.none { it.host == d.host }) devices.add(d)
-                status = "تم العثور على ${devices.size} جهاز"
+            discovery.scan().collect { device ->
+                if (devices.none { it.host == device.host }) devices.add(device)
+                status = "تم العثور على " + devices.size + " جهاز"
             }
         }
     }
 
-    fun connect(d: TvDevice) {
-        status = "جاري الاتصال بـ ${d.name}..."
-        val p = TvPairing(context, d.host,
-            { status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
-            { message -> status = message })
+    fun connect(device: TvDevice) {
+        status = "جاري الاتصال بـ " + device.name + "..."
+        val p = TvPairing(
+            context = context,
+            host = device.host,
+            onCode = { status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
+            onPaired = { identity ->
+                status = "تم الاقتران. جاري الاتصال..."
+                val r = TvRemote(
+                    host = device.host,
+                    id = identity,
+                    onReady = {
+                        connected = true
+                        remote = r
+                        pairing = null
+                        status = "متصل"
+                    },
+                    onError = { error ->
+                        connected = false
+                        status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
+                    }
+                )
+                remote = r
+                r.start()
+            },
+            onError = { error ->
+                status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
+            }
+        )
         pairing = p
         p.start()
     }
@@ -104,16 +128,18 @@ private fun Screen() {
                     Text("البحث عن أجهزة التلفزيون")
                 }
             }
-            items(devices, key = { it.host }) { d ->
+            items(devices, key = { it.host }) { device ->
                 Card(
                     Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
                     colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(d.name, style = MaterialTheme.typography.titleMedium)
-                        Text(d.host, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FilledTonalButton({ connect(d) }, Modifier.fillMaxWidth()) { Text("اتصال") }
+                        Text(device.name, style = MaterialTheme.typography.titleMedium)
+                        Text(device.host, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        FilledTonalButton({ connect(device) }, Modifier.fillMaxWidth()) {
+                            Text("اتصال")
+                        }
                     }
                 }
             }
@@ -123,19 +149,27 @@ private fun Screen() {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("إقران التلفزيون", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
-                                code, { code = it.take(6) },
+                                value = code,
+                                onValueChange = { code = it.take(6) },
                                 label = { Text("رمز الاقتران") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Button({
-                                if (p.submitCode(code)) status = "تم الاقتران. جاري الاتصال..."
-                            }, Modifier.fillMaxWidth()) { Text("تأكيد الرمز") }
+                            Button(
+                                onClick = {
+                                    if (p.submitCode(code)) status = "تم إرسال الرمز. انتظار التلفزيون..."
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("تأكيد الرمز")
+                            }
                         }
                     }
                 }
             }
-            if (connected && remote != null) item { RemoteControls(remote!!) }
+            if (connected && remote != null) {
+                item { RemoteControls(remote!!) }
+            }
         }
     }
 }
@@ -155,13 +189,17 @@ private fun RemoteControls(remote: TvRemote) {
             colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
         ) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.up() }) { Text("↑") } }
+                Row(Modifier.fillMaxWidth(), Arrangement.Center) {
+                    FilledTonalButton({ remote.up() }) { Text("↑") }
+                }
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
                     FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
                     FilledTonalButton({ remote.right() }, Modifier.weight(1f)) { Text("→") }
                 }
-                Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.down() }) { Text("↓") } }
+                Row(Modifier.fillMaxWidth(), Arrangement.Center) {
+                    FilledTonalButton({ remote.down() }) { Text("↓") }
+                }
             }
         }
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {

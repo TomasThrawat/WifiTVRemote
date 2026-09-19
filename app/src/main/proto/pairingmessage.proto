@@ -1,6 +1,7 @@
 // pairingmessage.proto
 syntax = "proto3";
 package pairing;
+option java_multiple_files = true;
 
 enum RoleType {
   ROLE_TYPE_UNKNOWN = 0;
@@ -43,7 +44,6 @@ message PairingConfiguration {
 }
 
 message PairingConfigurationAck {
-
 }
 
 message PairingSecret {

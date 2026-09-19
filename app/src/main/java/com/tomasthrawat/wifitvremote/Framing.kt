@@ -1,7 +1,39 @@
 package com.tomasthrawat.wifitvremote
+
+import java.io.EOFException
 import java.io.InputStream
 import java.io.OutputStream
-object Framing{
-    fun write(o:OutputStream,b:ByteArray){require(b.size<=255);o.write(b.size);o.write(b);o.flush()}
-    fun read(i:InputStream):ByteArray{val n=i.read();if(n<0)throw java.io.EOFException();val b=ByteArray(n);var p=0;while(p<n){val r=i.read(b,p,n-p);if(r<0)throw java.io.EOFException();p+=r};return b}
+
+object Framing {
+    fun write(o: OutputStream, b: ByteArray) {
+        var n = b.size
+        while (n > 0x7f) {
+            o.write((n and 0x7f) or 0x80)
+            n = n ushr 7
+        }
+        o.write(n)
+        o.write(b)
+        o.flush()
+    }
+
+    fun read(i: InputStream): ByteArray {
+        var shift = 0
+        var n = 0
+        while (true) {
+            val v = i.read()
+            if (v < 0) throw EOFException()
+            n = n or ((v and 0x7f) shl shift)
+            if ((v and 0x80) == 0) break
+            shift += 7
+            if (shift > 28) throw IllegalArgumentException("Invalid protobuf frame length")
+        }
+        val b = ByteArray(n)
+        var p = 0
+        while (p < n) {
+            val r = i.read(b, p, n - p)
+            if (r < 0) throw EOFException()
+            p += r
+        }
+        return b
+    }
 }
