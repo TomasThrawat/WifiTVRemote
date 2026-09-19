@@ -13,7 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -156,11 +158,17 @@ private fun Screen() {
                                 modifier = Modifier.fillMaxWidth())
                             Button(
                                 onClick = {
-                                    AppLogger.i("PAIRING_UI", "pairing code submitted length=" + code.trim().length)
-                                    if (p.submitCode(code)) {
-                                        status = "تم إرسال الرمز. انتظار التلفزيون..."
-                                    } else {
-                                        status = "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
+                                    val submittedCode = code
+                                    AppLogger.i("PAIRING_UI", "pairing code submitted length=" + submittedCode.trim().length)
+                                    scope.launch {
+                                        val success = withContext(Dispatchers.IO) {
+                                            p.submitCode(submittedCode)
+                                        }
+                                        status = if (success) {
+                                            "تم إرسال الرمز. انتظار التلفزيون..."
+                                        } else {
+                                            "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
+                                        }
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth()

@@ -1,5 +1,7 @@
 package com.tomasthrawat.wifitvremote
 
+import android.os.Looper
+
 import android.content.Context
 import android.os.Build
 import com.google.protobuf.ByteString
@@ -136,6 +138,9 @@ class TvPairing(
     }
 
     fun submitCode(raw: String): Boolean {
+        check(Looper.myLooper() != Looper.getMainLooper()) {
+            "submitCode must run off the main thread"
+        }
         AppLogger.i("PAIRING_CODE", "submit requested rawLength=" + raw.trim().length)
         return try {
             val id = clientIdentity ?: return false
