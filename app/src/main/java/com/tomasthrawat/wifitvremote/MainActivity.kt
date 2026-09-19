@@ -192,9 +192,9 @@ private fun RemoteControls(remote: TvRemote) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.up() }) { Text("↑") } }
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
-                    FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
                     FilledTonalButton({ remote.right() }, Modifier.weight(1f)) { Text("→") }
+                    FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
+                    FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
                 }
                 Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.down() }) { Text("↓") } }
             }
