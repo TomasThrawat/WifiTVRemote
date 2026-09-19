@@ -140,9 +140,16 @@ private fun Screen() {
                             OutlinedTextField(value = code, onValueChange = { code = it.take(6) },
                                 label = { Text("رمز الاقتران") }, singleLine = true,
                                 modifier = Modifier.fillMaxWidth())
-                            Button(onClick = {
-                                if (p.submitCode(code)) status = "تم إرسال الرمز. انتظار التلفزيون..."
-                            }, modifier = Modifier.fillMaxWidth()) { Text("تأكيد الرمز") }
+                            Button(
+                                onClick = {
+                                    if (p.submitCode(code)) {
+                                        status = "تم إرسال الرمز. انتظار التلفزيون..."
+                                    } else {
+                                        status = "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("تأكيد الرمز") }
                         }
                     }
                 }
