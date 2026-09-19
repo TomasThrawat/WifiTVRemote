@@ -3,10 +3,7 @@ syntax = "proto3";
 package remote;
 option java_multiple_files = true;
 
-message RemoteAppLinkLaunchRequest {
-  string app_link = 1;
-}
-
+message RemoteAppLinkLaunchRequest { string app_link = 1; }
 message RemoteResetPreferredAudioDevice {}
 message RemoteSetPreferredAudioDevice {}
 message RemoteAdjustVolumeLevel {}
@@ -28,20 +25,17 @@ message RemoteVoicePayload {}
 message RemoteVoiceEnd {}
 message RemoteStart {}
 message RemoteStop {}
+
 message RemoteKeyInject {
-  enum Direction {
-    UNKNOWN = 0;
-    START = 1;
-    END = 2;
-    SHORT = 3;
-  }
+  enum Direction { UNKNOWN = 0; START = 1; END = 2; SHORT = 3; }
   int32 key_code = 1;
   Direction direction = 2;
 }
+
 message RemoteKeyCode {
   enum KeyCode {
     UNKNOWN = 0;
-    KEYCODE_UNKNOWN = 0;
+    KEYCODE_UNKNOWN = 1;
     KEYCODE_HOME = 3;
     KEYCODE_BACK = 4;
     KEYCODE_DPAD_UP = 19;
@@ -56,27 +50,16 @@ message RemoteKeyCode {
     KEYCODE_MEDIA_PLAY_PAUSE = 85;
   }
 }
-message RemoteConfigure {
-  int32 code1 = 1;
-  RemoteDeviceInfo device_info = 2;
-}
+
+message RemoteConfigure { int32 code1 = 1; RemoteDeviceInfo device_info = 2; }
 message RemoteDeviceInfo {
-  string model = 1;
-  string vendor = 2;
-  int32 unknown1 = 3;
-  string unknown2 = 4;
-  string package_name = 5;
-  string app_version = 6;
+  string model = 1; string vendor = 2; int32 unknown1 = 3;
+  string unknown2 = 4; string package_name = 5; string app_version = 6;
 }
-message RemoteSetActive {
-  int32 active = 1;
-}
-message RemotePingRequest {
-  int32 val1 = 1;
-}
-message RemotePingResponse {
-  int32 val1 = 1;
-}
+message RemoteSetActive { int32 active = 1; }
+message RemotePingRequest { int32 val1 = 1; }
+message RemotePingResponse { int32 val1 = 1; }
+
 message RemoteMessage {
   oneof message {
     RemoteAppLinkLaunchRequest remote_app_link_launch_request = 1;
