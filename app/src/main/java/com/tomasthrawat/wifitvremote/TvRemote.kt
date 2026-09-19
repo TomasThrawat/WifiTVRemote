@@ -20,18 +20,26 @@ class TvRemote(
     private var socket: SSLSocket? = null
 
     fun start() {
+        AppLogger.i("REMOTE", "start host=" + host + " port=6466")
         Thread {
             try {
                 socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
+                AppLogger.i("REMOTE", "connecting TLS port=6466 timeoutMs=8000")
                 socket!!.connect(InetSocketAddress(host, 6466), 8000)
                 socket!!.useClientMode = true
+                AppLogger.i("REMOTE", "TLS handshake starting")
                 socket!!.startHandshake()
+                AppLogger.i("REMOTE", "TLS handshake complete protocol=" + socket!!.session.protocol + " cipher=" + socket!!.session.cipherSuite)
+                AppLogger.d("REMOTE", "sending RemoteConfigure")
                 send(config())
                 while (true) {
-                    when (val message = RemoteMessage.parseFrom(Framing.read(socket!!.inputStream))) {
+                    val frame = Framing.read(socket!!.inputStream)
+                    AppLogger.d("REMOTE", "received frame bytes=" + frame.size)
+                    when (val message = RemoteMessage.parseFrom(frame)) {
                         else -> {
                             when {
                                 message.hasRemoteConfigure() -> {
+                                    AppLogger.i("REMOTE", "received RemoteConfigure; activating remote")
                                     send(
                                         RemoteMessage.newBuilder()
                                             .setRemoteSetActive(
@@ -39,9 +47,11 @@ class TvRemote(
                                             )
                                             .build().toByteArray()
                                     )
+                                    AppLogger.i("REMOTE", "remote active; onReady")
                                     onReady()
                                 }
                                 message.hasRemotePingRequest() -> {
+                                    AppLogger.d("REMOTE", "received ping request; replying")
                                     send(
                                         RemoteMessage.newBuilder()
                                             .setRemotePingResponse(
@@ -56,6 +66,7 @@ class TvRemote(
                     }
                 }
             } catch (t: Throwable) {
+                AppLogger.e("REMOTE", "remote thread failed", t)
                 onError(t)
             }
         }.start()
@@ -78,6 +89,7 @@ class TvRemote(
         .build().toByteArray()
 
     fun key(key: RemoteKeyCode.KeyCode) {
+        AppLogger.i("REMOTE_KEY", "sending key=" + key.name + " number=" + key.number)
         send(
             RemoteMessage.newBuilder()
                 .setRemoteKeyInject(
@@ -103,11 +115,13 @@ class TvRemote(
     fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
 
     fun stop() {
+        AppLogger.i("REMOTE", "stop requested")
         try { socket?.close() } catch (_: Throwable) {}
     }
 
     private fun send(bytes: ByteArray) {
         synchronized(this) {
+            AppLogger.d("REMOTE_IO", "send frame bytes=" + bytes.size)
             Framing.write(socket!!.outputStream, bytes)
         }
     }

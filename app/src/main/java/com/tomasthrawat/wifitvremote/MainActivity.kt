@@ -18,7 +18,14 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLogger.init(applicationContext)
+        AppLogger.i("ACTIVITY", "onCreate")
         setContent { WifiTvRemoteTheme { Screen() } }
+    }
+
+    override fun onDestroy() {
+        AppLogger.i("ACTIVITY", "onDestroy")
+        super.onDestroy()
     }
 }
 
@@ -46,10 +53,12 @@ private fun Screen() {
     var status by remember { mutableStateOf("Wi‑Fi فقط • جاهز للبحث") }
 
     fun scan() {
+        AppLogger.i("UI_SCAN", "scan requested")
         devices.clear()
         status = "جاري البحث..."
         scope.launch {
             discovery.scan().collect { device ->
+                AppLogger.i("DISCOVERY", "device found name=" + device.name + " host=" + device.host + " port=" + device.port)
                 if (devices.none { it.host == device.host }) devices.add(device)
                 status = "تم العثور على " + devices.size + " جهاز"
             }
@@ -57,24 +66,28 @@ private fun Screen() {
     }
 
     fun connect(device: TvDevice) {
+        AppLogger.i("UI_CONNECT", "connect requested name=" + device.name + " host=" + device.host + " port=" + device.port)
         status = "جاري الاتصال بـ " + device.name + "..."
         lateinit var r: TvRemote
         val p = TvPairing(
             context = context,
             host = device.host,
-            onCode = { status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
+            onCode = { AppLogger.i("PAIRING_UI", "TV requested pairing code"); status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
             onPaired = { identity ->
+                AppLogger.i("PAIRING_UI", "pairing completed; starting remote connection")
                 status = "تم الاقتران. جاري الاتصال..."
                 r = TvRemote(
                     host = device.host,
                     id = identity,
                     onReady = {
+                        AppLogger.i("REMOTE_UI", "remote ready")
                         connected = true
                         remote = r
                         pairing = null
                         status = "متصل"
                     },
                     onError = { error ->
+                        AppLogger.e("REMOTE_UI", "remote error", error)
                         connected = false
                         status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
                     }
@@ -83,6 +96,7 @@ private fun Screen() {
                 r.start()
             },
             onError = { error ->
+                AppLogger.e("PAIRING_UI", "pairing error", error)
                 status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
             }
         )
@@ -142,6 +156,7 @@ private fun Screen() {
                                 modifier = Modifier.fillMaxWidth())
                             Button(
                                 onClick = {
+                                    AppLogger.i("PAIRING_UI", "pairing code submitted length=" + code.trim().length)
                                     if (p.submitCode(code)) {
                                         status = "تم إرسال الرمز. انتظار التلفزيون..."
                                     } else {

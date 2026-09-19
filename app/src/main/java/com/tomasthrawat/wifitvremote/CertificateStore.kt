@@ -18,12 +18,14 @@ object CertificateStore {
     private fun bcProvider(): BouncyCastleProvider = BouncyCastleProvider()
 
     fun loadOrCreate(c: Context, host: String): ClientIdentity {
+        AppLogger.d("CERT", "loadOrCreate host=" + host)
         val p = c.getSharedPreferences("tv_identities", Context.MODE_PRIVATE)
         val id = host.replace(Regex("[^0-9A-Za-z_.-]"), "_")
         val kb = p.getString("k_$id", null)
         val cb = p.getString("c_$id", null)
 
         if (kb != null && cb != null) {
+            AppLogger.i("CERT", "loading persisted client identity host=" + host)
             val k = KeyFactory.getInstance("RSA").generatePrivate(
                 PKCS8EncodedKeySpec(Base64.decode(kb, Base64.NO_WRAP))
             )
@@ -34,6 +36,7 @@ object CertificateStore {
             return ClientIdentity(k, cert)
         }
 
+        AppLogger.i("CERT", "creating RSA-2048 client identity host=" + host)
         val kp = KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
         val now = java.util.Date()
         val end = java.util.Date(now.time + 1000L * 60 * 60 * 24 * 3650)
@@ -62,6 +65,7 @@ object CertificateStore {
             .putString("c_$id", Base64.encodeToString(cert.encoded, Base64.NO_WRAP))
             .apply()
 
+        AppLogger.i("CERT", "client identity created and persisted host=" + host)
         return ClientIdentity(kp.private, cert)
     }
 }
