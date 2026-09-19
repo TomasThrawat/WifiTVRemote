@@ -128,8 +128,6 @@ class TvPairing(
             digest.update(bytes(code))
             val secret = digest.digest()
 
-            if ((secret[0].toInt() and 255) != code.substring(0, 2).toInt(16)) return false
-
             send(
                 PairingMessage.newBuilder()
                     .setProtocolVersion(2)
