@@ -119,7 +119,7 @@ class TvRemote(
                             AppLogger.i(
                                 "REMOTE",
                                 "received RemoteStart started=" +
-                                    message.remoteStart.started
+                                    "received RemoteStart"
                             )
                             if (activeSent && !handshakeReady) {
                                 handshakeReady = true
@@ -131,9 +131,7 @@ class TvRemote(
                             AppLogger.d(
                                 "REMOTE",
                                 "received ping request val1=" +
-                                    message.remotePingRequest.val1 +
-                                    " val2=" +
-                                    message.remotePingRequest.val2
+                                    message.remotePingRequest.val1
                             )
                             send(
                                 RemoteMessage.newBuilder()
