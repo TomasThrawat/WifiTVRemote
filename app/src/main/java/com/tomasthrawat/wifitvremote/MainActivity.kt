@@ -12,6 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
@@ -19,10 +21,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent { WifiTvRemoteTheme { Screen() } }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 }
 
@@ -67,9 +65,7 @@ private fun Screen() {
         val p = TvPairing(
             context = context,
             host = device.host,
-            onCode = {
-                status = "أدخل رمز الاقتران الظاهر على التلفزيون."
-            },
+            onCode = { status = "أدخل رمز الاقتران الظاهر على التلفزيون." },
             onPaired = { identity ->
                 status = "تم الاقتران. جاري الاتصال..."
                 r = TvRemote(
@@ -99,11 +95,12 @@ private fun Screen() {
     }
 
     if (showRemote && connected && remote != null) {
-        RemoteScreen(
-            remote = remote!!,
-            status = status,
-            onBack = { showRemote = false }
-        )
+        RemoteScreen(remote = remote!!, status = status, onBack = {
+            remote?.stop()
+            connected = false
+            showRemote = false
+            status = "تم فصل الاتصال"
+        })
     } else {
         ConnectionScreen(
             devices = devices,
@@ -118,11 +115,7 @@ private fun Screen() {
                 scope.launch {
                     val p = pairing ?: return@launch
                     val success = p.submitCode(submittedCode)
-                    status = if (success) {
-                        "تم إرسال الرمز. انتظار التلفزيون..."
-                    } else {
-                        "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
-                    }
+                    status = if (success) "تم إرسال الرمز. انتظار التلفزيون..." else "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
                 }
             }
         )
@@ -150,9 +143,7 @@ private fun ConnectionScreen(
                         Text("Wi‑Fi TV Remote", style = MaterialTheme.typography.labelMedium)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             )
         },
         containerColor = MaterialTheme.colorScheme.surface
@@ -163,74 +154,40 @@ private fun ConnectionScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Column(
-                        Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.primaryContainer)) {
+                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("الاتصال بالتلفزيون", style = MaterialTheme.typography.headlineSmall)
                         Text("ابحث عن Android TV واتصل به عبر Wi‑Fi.")
                         Text(status, style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
-
             item {
-                Button(onClick = onScan, Modifier.fillMaxWidth()) {
-                    Text("البحث عن أجهزة التلفزيون")
-                }
+                Button(onClick = onScan, Modifier.fillMaxWidth()) { Text("البحث عن أجهزة التلفزيون") }
             }
-
-            items(devices, key = { it.host }) { device ->
-                Card(
-                    Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.large,
-                    colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)
-                ) {
-                    Column(
-                        Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text(device.name, style = MaterialTheme.typography.titleMedium)
-                        Text(device.host, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        FilledTonalButton(
-                            onClick = { onConnect(device) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("اتصال")
-                        }
+            items(devices, key = { it.host }) {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(it.name, style = MaterialTheme.typography.titleMedium)
+                        Text(it.host, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        FilledTonalButton(onClick = { onConnect(it) }, modifier = Modifier.fillMaxWidth()) { Text("اتصال") }
                     }
                 }
             }
-
             pairing?.let {
                 item {
-                    Card(
-                        Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.extraLarge
-                    ) {
-                        Column(
-                            Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
+                    Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             Text("إقران التلفزيون", style = MaterialTheme.typography.titleLarge)
                             OutlinedTextField(
                                 value = code,
                                 onValueChange = onCodeChange,
                                 label = { Text("رمز الاقتران") },
                                 singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Button(
-                                onClick = onSubmitCode,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("تأكيد الرمز")
-                            }
+                            Button(onClick = onSubmitCode, modifier = Modifier.fillMaxWidth()) { Text("تأكيد الرمز") }
                         }
                     }
                 }
@@ -246,74 +203,110 @@ private fun RemoteScreen(
     status: String,
     onBack: () -> Unit
 ) {
+    var text by remember { mutableStateOf("") }
+    var textReady by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Text("‹", style = MaterialTheme.typography.headlineMedium)
-                    }
-                },
+                navigationIcon = { IconButton(onClick = onBack) { Text("‹", style = MaterialTheme.typography.headlineMedium) } },
                 title = {
                     Column {
                         Text("جهاز التحكم", style = MaterialTheme.typography.titleLarge)
                         Text(status, style = MaterialTheme.typography.labelMedium)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
             )
         },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                OutlinedButton({ remote.power() }, Modifier.weight(1f)) { Text("Power") }
-                OutlinedButton({ remote.home() }, Modifier.weight(1f)) { Text("Home") }
-                OutlinedButton({ remote.back() }, Modifier.weight(1f)) { Text("Back") }
-            }
-
-            Card(
-                Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)
-            ) {
-                Column(
-                    Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(Modifier.fillMaxWidth(), Arrangement.Center) {
-                        FilledTonalButton({ remote.up() }) { Text("↑") }
-                    }
-                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton({ remote.right() }, Modifier.weight(1f)) { Text("→") }
-                        FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
-                        FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
-                    }
-                    Row(Modifier.fillMaxWidth(), Arrangement.Center) {
-                        FilledTonalButton({ remote.down() }) { Text("↓") }
+            item {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("الكتابة على التلفزيون", style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            if (textReady) "جاهز لإرسال النص إلى حقل الكتابة النشط على التلفزيون."
+                            else "افتح حقل كتابة على التلفزيون أولًا، ثم اكتب هنا."
+                        )
+                        OutlinedTextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            singleLine = false,
+                            minLines = 2,
+                            maxLines = 5,
+                            placeholder = { Text("اكتب هنا…") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { remote.sendText(text) },
+                                enabled = textReady && text.isNotEmpty(),
+                                modifier = Modifier.weight(1f)
+                            ) { Text("إرسال") }
+                            OutlinedButton(
+                                onClick = { text = ""; remote.clearText() },
+                                enabled = textReady,
+                                modifier = Modifier.weight(1f)
+                            ) { Text("مسح") }
+                        }
+                        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton({ remote.delete() }, Modifier.weight(1f)) { Text("حذف") }
+                            OutlinedButton({ remote.space() }, Modifier.weight(1f)) { Text("مسافة") }
+                            OutlinedButton({ remote.enter() }, Modifier.weight(1f)) { Text("إدخال") }
+                        }
                     }
                 }
             }
 
-            Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                OutlinedButton({ remote.volumeDown() }, Modifier.weight(1f)) { Text("Vol −") }
-                OutlinedButton({ remote.mute() }, Modifier.weight(1f)) { Text("Mute") }
-                OutlinedButton({ remote.volumeUp() }, Modifier.weight(1f)) { Text("Vol +") }
+            item {
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton({ remote.power() }, Modifier.weight(1f)) { Text("Power") }
+                    OutlinedButton({ remote.home() }, Modifier.weight(1f)) { Text("Home") }
+                    OutlinedButton({ remote.back() }, Modifier.weight(1f)) { Text("Back") }
+                }
             }
 
-            Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton({ remote.playPause() }, Modifier.weight(1f)) { Text("Play / Pause") }
-                FilledTonalButton({ remote.stop() }, Modifier.weight(1f)) { Text("Stop") }
+            item {
+                Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.up() }) { Text("↑") } }
+                        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton({ remote.right() }, Modifier.weight(1f)) { Text("→") }
+                            FilledTonalButton({ remote.ok() }, Modifier.weight(1f)) { Text("OK") }
+                            FilledTonalButton({ remote.left() }, Modifier.weight(1f)) { Text("←") }
+                        }
+                        Row(Modifier.fillMaxWidth(), Arrangement.Center) { FilledTonalButton({ remote.down() }) { Text("↓") } }
+                    }
+                }
+            }
+
+            item {
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton({ remote.volumeDown() }, Modifier.weight(1f)) { Text("Vol −") }
+                    OutlinedButton({ remote.mute() }, Modifier.weight(1f)) { Text("Mute") }
+                    OutlinedButton({ remote.volumeUp() }, Modifier.weight(1f)) { Text("Vol +") }
+                }
+            }
+
+            item {
+                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton({ remote.playPause() }, Modifier.weight(1f)) { Text("Play / Pause") }
+                    FilledTonalButton({ remote.stop() }, Modifier.weight(1f)) { Text("Stop") }
+                }
             }
         }
     }
-}
 
+    DisposableEffect(remote) {
+        val callback = { ready: Boolean -> textReady = ready }
+        remote.setTextStateListener(callback)
+        onDispose { remote.setTextStateListener(null) }
+    }
+}

@@ -5,11 +5,16 @@ import android.os.Handler
 import android.os.Looper
 import remote.RemoteConfigure
 import remote.RemoteDeviceInfo
+import remote.RemoteEditInfo
+import remote.RemoteImeBatchEdit
+import remote.RemoteImeKeyInject
+import remote.RemoteImeObject
 import remote.RemoteKeyCode
 import remote.RemoteKeyInject
 import remote.RemoteMessage
 import remote.RemotePingResponse
 import remote.RemoteSetActive
+import remote.RemoteTextFieldStatus
 import java.net.InetSocketAddress
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +27,8 @@ class TvRemote(
     private val host: String,
     private val id: ClientIdentity,
     private val onReady: () -> Unit,
-    private val onError: (Throwable) -> Unit
+    private val onError: (Throwable) -> Unit,
+    private val onTextStateChanged: (Boolean) -> Unit = {}
 ) {
     companion object {
         private const val REQUESTED_FEATURES = 622
@@ -33,12 +39,15 @@ class TvRemote(
     private var handshakeReady = false
     private var configureSent = false
     private var activeSent = false
+    private var imeCounter = 0
+    private var fieldCounter = 0
+    private var textFieldValue = ""
+    private var textFieldStart = 0
+    private var textFieldEnd = 0
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private fun postMain(block: () -> Unit) {
-        mainHandler.post(block)
-    }
+    private fun postMain(block: () -> Unit) = mainHandler.post(block)
 
     fun start() {
         ioScope.launch {
@@ -59,14 +68,11 @@ class TvRemote(
                         message.hasRemoteConfigure() -> {
                             val supported = message.remoteConfigure.code1
                             activeFeatures = REQUESTED_FEATURES and supported
-
-
                             if (configureSent && !activeSent) {
                                 send(
                                     RemoteMessage.newBuilder()
                                         .setRemoteSetActive(
-                                            RemoteSetActive.newBuilder()
-                                                .setActive(activeFeatures)
+                                            RemoteSetActive.newBuilder().setActive(activeFeatures)
                                         )
                                         .build()
                                         .toByteArray()
@@ -74,19 +80,16 @@ class TvRemote(
                                 activeSent = true
                             }
                         }
-
                         message.hasRemoteSetActive() -> {
                             handshakeReady = true
                             postMain(onReady)
                         }
-
                         message.hasRemoteStart() -> {
                             if (activeSent && !handshakeReady) {
                                 handshakeReady = true
                                 postMain(onReady)
                             }
                         }
-
                         message.hasRemotePingRequest() -> {
                             send(
                                 RemoteMessage.newBuilder()
@@ -98,17 +101,33 @@ class TvRemote(
                                     .toByteArray()
                             )
                         }
-
+                        message.hasRemoteImeBatchEdit() -> {
+                            val edit = message.remoteImeBatchEdit
+                            imeCounter = edit.imeCounter
+                            fieldCounter = edit.fieldCounter
+                            edit.editInfoList.lastOrNull()?.textFieldStatus?.let { state ->
+                                textFieldValue = state.value
+                                textFieldStart = state.start
+                                textFieldEnd = state.end
+                            }
+                            postMain { onTextStateChanged(true) }
+                        }
+                        message.hasRemoteImeKeyInject() -> {
+                            val state = message.remoteImeKeyInject.textFieldStatus
+                            if (state != null) {
+                                updateTextState(state)
+                                postMain { onTextStateChanged(true) }
+                            }
+                        }
+                        message.hasRemoteImeShowRequest() -> {
+                            val state = message.remoteImeShowRequest.remoteTextFieldStatus
+                            if (state != null) {
+                                updateTextState(state)
+                                postMain { onTextStateChanged(true) }
+                            }
+                        }
                         message.hasRemoteError() -> {
-                        }
-
-                        message.hasRemoteAppLinkLaunchRequest() -> {
-                        }
-
-                        message.hasRemoteSetPreferredAudioDevice() -> {
-                        }
-
-                        else -> {
+                            postMain { onError(IllegalStateException("TV returned a remote protocol error")) }
                         }
                     }
                 }
@@ -116,6 +135,13 @@ class TvRemote(
                 postMain { onError(t) }
             }
         }
+    }
+
+    private fun updateTextState(state: RemoteTextFieldStatus) {
+        fieldCounter = state.counterField
+        textFieldValue = state.value
+        textFieldStart = state.start
+        textFieldEnd = state.end
     }
 
     private fun config(features: Int) = RemoteMessage.newBuilder()
@@ -138,11 +164,7 @@ class TvRemote(
     fun key(key: RemoteKeyCode.KeyCode) {
         ioScope.launch {
             try {
-                if (!handshakeReady) {
-                    return@launch
-                }
-
-
+                if (!handshakeReady) return@launch
                 send(
                     RemoteMessage.newBuilder()
                         .setRemoteKeyInject(
@@ -159,6 +181,42 @@ class TvRemote(
         }
     }
 
+    fun sendText(text: String) {
+        val value = text
+        ioScope.launch {
+            try {
+                if (!handshakeReady) return@launch
+                val position = value.length.coerceAtLeast(1) - 1
+                send(
+                    RemoteMessage.newBuilder()
+                        .setRemoteImeBatchEdit(
+                            RemoteImeBatchEdit.newBuilder()
+                                .setImeCounter(imeCounter)
+                                .setFieldCounter(fieldCounter)
+                                .addEditInfo(
+                                    RemoteEditInfo.newBuilder()
+                                        .setInsert(1)
+                                        .setTextFieldStatus(
+                                            RemoteImeObject.newBuilder()
+                                                .setStart(position)
+                                                .setEnd(position)
+                                                .setValue(value)
+                                        )
+                                )
+                        )
+                        .build()
+                        .toByteArray()
+                )
+            } catch (t: Throwable) {
+                postMain { onError(t) }
+            }
+        }
+    }
+
+    fun clearText() {
+        sendText("")
+    }
+
     fun power() = key(RemoteKeyCode.KeyCode.KEYCODE_POWER)
     fun home() = key(RemoteKeyCode.KeyCode.KEYCODE_HOME)
     fun back() = key(RemoteKeyCode.KeyCode.KEYCODE_BACK)
@@ -171,13 +229,13 @@ class TvRemote(
     fun volumeDown() = key(RemoteKeyCode.KeyCode.KEYCODE_VOLUME_DOWN)
     fun mute() = key(RemoteKeyCode.KeyCode.KEYCODE_MUTE)
     fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
+    fun enter() = key(RemoteKeyCode.KeyCode.KEYCODE_ENTER)
+    fun delete() = key(RemoteKeyCode.KeyCode.KEYCODE_DEL)
+    fun space() = key(RemoteKeyCode.KeyCode.KEYCODE_SPACE)
 
     fun stop() {
         ioScope.cancel()
-        try {
-            socket?.close()
-        } catch (_: Throwable) {
-        }
+        try { socket?.close() } catch (_: Throwable) {}
     }
 
     private fun send(bytes: ByteArray) {

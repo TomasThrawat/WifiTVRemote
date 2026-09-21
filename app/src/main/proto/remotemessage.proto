@@ -1,4 +1,3 @@
-// remotemessage.proto
 syntax = "proto3";
 package remote;
 option java_multiple_files = true;
@@ -13,17 +12,10 @@ message RemoteStopScan {}
 message RemoteConnect {}
 message RemoteDisconnect {}
 message RemoteError {}
-message RemoteImeBatchEdit {}
-message RemoteImeKeyEvent {}
-message RemoteImeShowRequest {}
-message RemoteImeHideRequest {}
-message RemoteImeTextFieldStatus {}
-message RemoteImeSetComposingText {}
-message RemoteImeAction {}
 message RemoteVoiceBegin {}
 message RemoteVoicePayload {}
 message RemoteVoiceEnd {}
-message RemoteStart {}
+message RemoteStart { bool started = 1; }
 message RemoteStop {}
 
 message RemoteKeyInject {
@@ -45,6 +37,9 @@ message RemoteKeyCode {
     KEYCODE_VOLUME_UP = 24;
     KEYCODE_VOLUME_DOWN = 25;
     KEYCODE_POWER = 26;
+    KEYCODE_ENTER = 66;
+    KEYCODE_DEL = 67;
+    KEYCODE_SPACE = 62;
     KEYCODE_MUTE = 91;
     KEYCODE_MEDIA_PLAY_PAUSE = 85;
   }
@@ -63,34 +58,66 @@ message RemoteSetActive { int32 active = 1; }
 message RemotePingRequest { int32 val1 = 1; }
 message RemotePingResponse { int32 val1 = 1; }
 
+message RemoteTextFieldStatus {
+  int32 counter_field = 1;
+  string value = 2;
+  int32 start = 3;
+  int32 end = 4;
+  int32 int5 = 5;
+  string label = 6;
+}
+message RemoteImeShowRequest {
+  RemoteTextFieldStatus remote_text_field_status = 2;
+}
+message RemoteImeObject {
+  int32 start = 1;
+  int32 end = 2;
+  string value = 3;
+}
+message RemoteEditInfo {
+  int32 insert = 1;
+  RemoteImeObject text_field_status = 2;
+}
+message RemoteImeBatchEdit {
+  int32 ime_counter = 1;
+  int32 field_counter = 2;
+  repeated RemoteEditInfo edit_info = 3;
+}
+message RemoteAppInfo {
+  int32 counter = 1;
+  int32 int2 = 2;
+  int32 int3 = 3;
+  string int4 = 4;
+  int32 int7 = 7;
+  int32 int8 = 8;
+  string label = 10;
+  string app_package = 12;
+  int32 int13 = 13;
+}
+message RemoteImeKeyInject {
+  RemoteAppInfo app_info = 1;
+  RemoteTextFieldStatus text_field_status = 2;
+}
+
 message RemoteMessage {
   oneof message {
-    RemoteAppLinkLaunchRequest remote_app_link_launch_request = 90;
-    RemoteResetPreferredAudioDevice remote_reset_preferred_audio_device = 60;
-    RemoteSetPreferredAudioDevice remote_set_preferred_audio_device = 61;
-    RemoteAdjustVolumeLevel remote_adjust_volume_level = 50;
-    RemoteSetVolumeLevel remote_set_volume_level = 51;
-    RemoteStartScan remote_start_scan = 52;
-    RemoteStopScan remote_stop_scan = 53;
-    RemoteConnect remote_connect = 80;
-    RemoteDisconnect remote_disconnect = 81;
-    RemoteError remote_error = 20;
-    RemoteImeBatchEdit remote_ime_batch_edit = 11;
-    RemoteImeKeyEvent remote_ime_key_event = 12;
-    RemoteImeShowRequest remote_ime_show_request = 13;
-    RemoteImeHideRequest remote_ime_hide_request = 14;
-    RemoteImeTextFieldStatus remote_ime_text_field_status = 15;
-    RemoteImeSetComposingText remote_ime_set_composing_text = 16;
-    RemoteImeAction remote_ime_action = 17;
-    RemoteVoiceBegin remote_voice_begin = 18;
-    RemoteVoicePayload remote_voice_payload = 19;
-    RemoteVoiceEnd remote_voice_end = 21;
-    RemoteStart remote_start = 40;
-    RemoteStop remote_stop = 41;
-    RemoteKeyInject remote_key_inject = 10;
     RemoteConfigure remote_configure = 1;
     RemoteSetActive remote_set_active = 2;
+    RemoteError remote_error = 3;
     RemotePingRequest remote_ping_request = 8;
     RemotePingResponse remote_ping_response = 9;
+    RemoteKeyInject remote_key_inject = 10;
+    RemoteImeKeyInject remote_ime_key_inject = 20;
+    RemoteImeBatchEdit remote_ime_batch_edit = 21;
+    RemoteImeShowRequest remote_ime_show_request = 22;
+    RemoteVoiceBegin remote_voice_begin = 30;
+    RemoteVoicePayload remote_voice_payload = 31;
+    RemoteVoiceEnd remote_voice_end = 32;
+    RemoteStart remote_start = 40;
+    RemoteSetVolumeLevel remote_set_volume_level = 50;
+    RemoteAdjustVolumeLevel remote_adjust_volume_level = 51;
+    RemoteSetPreferredAudioDevice remote_set_preferred_audio_device = 60;
+    RemoteResetPreferredAudioDevice remote_reset_preferred_audio_device = 61;
+    RemoteAppLinkLaunchRequest remote_app_link_launch_request = 90;
   }
 }
