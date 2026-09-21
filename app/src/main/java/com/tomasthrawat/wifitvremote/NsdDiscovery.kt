@@ -14,7 +14,7 @@ data class TvDevice(val name: String, val host: String, val port: Int)
 
 class NsdDiscovery(c: Context) {
     private val nsd = c.getSystemService(Context.NSD_SERVICE) as NsdManager
-    private val executor: Executor = Runnable::run
+    private val executor: Executor = Executor { command -> command.run() }
 
     fun scan(): Flow<TvDevice> = callbackFlow {
         val discoveryListeners = mutableListOf<NsdManager.DiscoveryListener>()
