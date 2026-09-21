@@ -39,6 +39,7 @@ class TvPairing(
     }
 
     fun start() {
+        AppLogger.i("TvPairing", "Starting pairing host=" + host + " port=6467")
         Thread {
             try {
                 val id = CertificateStore.loadOrCreate(context, host)
@@ -46,18 +47,33 @@ class TvPairing(
 
                 val s = Tls.context(id).socketFactory.createSocket() as SSLSocket
                 socket = s
+                AppLogger.d("TvPairing", "Opening TLS socket host=" + host)
                 s.connect(InetSocketAddress(host, 6467), 8000)
+                AppLogger.i("TvPairing", "TCP connected host=" + host)
                 s.useClientMode = true
                 s.startHandshake()
+                AppLogger.i("TvPairing", "TLS handshake complete host=" + host)
 
                 serverCertificate = s.session.peerCertificates.firstOrNull() as? X509Certificate
                     ?: throw IllegalStateException("TV did not provide an X.509 certificate")
+                AppLogger.d(
+                    "TvPairing",
+                    "Received TV certificate subject=" + serverCertificate!!.subjectX500Principal.name
+                )
 
-                send(request())
+                val requestPayload = request()
+                AppLogger.d("TvPairing", "Sending pairing request bytes=" + requestPayload.size)
+                send(requestPayload)
 
                 while (true) {
                     val frame = Framing.read(s.inputStream)
                     val message = PairingMessage.parseFrom(frame)
+                    AppLogger.d(
+                        "TvPairing",
+                        "Received pairing frame bytes=" + frame.size +
+                            " status=" + message.status +
+                            " type=" + pairingMessageType(message)
+                    )
 
                     when {
                         message.status == PairingMessage.Status.STATUS_BAD_SECRET ->
@@ -66,11 +82,23 @@ class TvPairing(
                         message.status != PairingMessage.Status.STATUS_OK ->
                             throw IllegalStateException("TV status: " + message.status)
 
-                        message.hasPairingRequestAck() -> {  send(option()) }
-                        message.hasPairingOption() -> {  send(config()) }
-                        message.hasPairingConfigurationAck() -> {  postMain(onCode) }
+                        message.hasPairingRequestAck() -> {
+                            val payload = option()
+                            AppLogger.d("TvPairing", "Sending pairing option bytes=" + payload.size)
+                            send(payload)
+                        }
+                        message.hasPairingOption() -> {
+                            val payload = config()
+                            AppLogger.d("TvPairing", "Sending pairing configuration bytes=" + payload.size)
+                            send(payload)
+                        }
+                        message.hasPairingConfigurationAck() -> {
+                            AppLogger.i("TvPairing", "TV accepted pairing configuration; waiting for user code")
+                            postMain(onCode)
+                        }
 
                         message.hasPairingSecretAck() -> {
+                            AppLogger.i("TvPairing", "Pairing secret accepted by TV")
                             s.close()
                             postMain { onPaired(id) }
                             return@Thread
@@ -78,6 +106,7 @@ class TvPairing(
                     }
                 }
             } catch (t: Throwable) {
+                AppLogger.e("TvPairing", "Pairing loop failed", t)
                 postMain { onError(t) }
             }
         }.start()
@@ -134,7 +163,16 @@ class TvPairing(
         Framing.write(socket!!.outputStream, bytes)
     }
 
+    private fun pairingMessageType(message: PairingMessage): String = when {
+        message.hasPairingRequestAck() -> "PairingRequestAck"
+        message.hasPairingOption() -> "PairingOption"
+        message.hasPairingConfigurationAck() -> "PairingConfigurationAck"
+        message.hasPairingSecretAck() -> "PairingSecretAck"
+        else -> "Other"
+    }
+
     suspend fun submitCode(raw: String): Boolean = withContext(Dispatchers.IO) {
+        AppLogger.i("TvPairing", "submitCode called length=" + raw.length)
         try {
             val id = clientIdentity ?: return@withContext false
             val server = serverCertificate ?: return@withContext false
@@ -149,6 +187,7 @@ class TvPairing(
                 .uppercase()
 
             if (code.length != 6 || code.any { it !in "0123456789ABCDEF" }) {
+                AppLogger.w("TvPairing", "Pairing code rejected by local format validation")
                 return@withContext false
             }
 
@@ -181,9 +220,12 @@ class TvPairing(
 
             val expectedFirstByte = code.substring(0, 2).toInt(16)
             if ((secret[0].toInt() and 0xFF) != expectedFirstByte) {
-                throw IllegalArgumentException("Pairing code does not match the TLS certificates")
+                val error = IllegalArgumentException("Pairing code does not match the TLS certificates")
+                AppLogger.w("TvPairing", "Pairing code failed certificate-derived verification", error)
+                throw error
             }
 
+            AppLogger.d("TvPairing", "Sending pairing secret bytes=" + secret.size)
             send(
                 PairingMessage.newBuilder()
                     .setProtocolVersion(2)
@@ -196,17 +238,21 @@ class TvPairing(
                     .build()
                     .toByteArray()
             )
+            AppLogger.i("TvPairing", "Pairing secret sent successfully")
             true
         } catch (t: Throwable) {
+            AppLogger.e("TvPairing", "Pairing submission failed", t)
             postMain { onError(t) }
             false
         }
     }
 
     fun stop() {
+        AppLogger.i("TvPairing", "Stopping pairing host=" + host)
         try {
             socket?.close()
-        } catch (_: Throwable) {
+        } catch (t: Throwable) {
+            AppLogger.w("TvPairing", "Pairing socket close failed", t)
         }
     }
 }
