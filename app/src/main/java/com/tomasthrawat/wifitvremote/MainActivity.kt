@@ -8,11 +8,11 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -162,9 +162,7 @@ private fun ConnectionScreen(
                     }
                 }
             }
-            item {
-                Button(onClick = onScan, Modifier.fillMaxWidth()) { Text("البحث عن أجهزة التلفزيون") }
-            }
+            item { Button(onClick = onScan, Modifier.fillMaxWidth()) { Text("البحث عن أجهزة التلفزيون") } }
             items(devices, key = { it.host }) {
                 Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -198,11 +196,7 @@ private fun ConnectionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RemoteScreen(
-    remote: TvRemote,
-    status: String,
-    onBack: () -> Unit
-) {
+private fun RemoteScreen(remote: TvRemote, status: String, onBack: () -> Unit) {
     var text by remember { mutableStateOf("") }
     var textReady by remember { mutableStateOf(false) }
 
@@ -230,10 +224,7 @@ private fun RemoteScreen(
                 Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text("الكتابة على التلفزيون", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            if (textReady) "جاهز لإرسال النص إلى حقل الكتابة النشط على التلفزيون."
-                            else "افتح حقل كتابة على التلفزيون أولًا، ثم اكتب هنا."
-                        )
+                        Text(if (textReady) "جاهز لإرسال النص إلى حقل الكتابة النشط على التلفزيون." else "افتح حقل كتابة على التلفزيون أولًا، ثم اكتب هنا.")
                         OutlinedTextField(
                             value = text,
                             onValueChange = { text = it },
@@ -245,16 +236,8 @@ private fun RemoteScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { remote.sendText(text) },
-                                enabled = textReady && text.isNotEmpty(),
-                                modifier = Modifier.weight(1f)
-                            ) { Text("إرسال") }
-                            OutlinedButton(
-                                onClick = { text = ""; remote.clearText() },
-                                enabled = textReady,
-                                modifier = Modifier.weight(1f)
-                            ) { Text("مسح") }
+                            Button(onClick = { remote.sendText(text) }, enabled = textReady && text.isNotEmpty(), modifier = Modifier.weight(1f)) { Text("إرسال") }
+                            OutlinedButton(onClick = { text = ""; remote.clearText() }, enabled = textReady, modifier = Modifier.weight(1f)) { Text("مسح") }
                         }
                         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                             OutlinedButton({ remote.delete() }, Modifier.weight(1f)) { Text("حذف") }
@@ -264,7 +247,6 @@ private fun RemoteScreen(
                     }
                 }
             }
-
             item {
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     OutlinedButton({ remote.power() }, Modifier.weight(1f)) { Text("Power") }
@@ -272,7 +254,6 @@ private fun RemoteScreen(
                     OutlinedButton({ remote.back() }, Modifier.weight(1f)) { Text("Back") }
                 }
             }
-
             item {
                 Card(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.extraLarge, colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -286,7 +267,6 @@ private fun RemoteScreen(
                     }
                 }
             }
-
             item {
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     OutlinedButton({ remote.volumeDown() }, Modifier.weight(1f)) { Text("Vol −") }
@@ -294,7 +274,6 @@ private fun RemoteScreen(
                     OutlinedButton({ remote.volumeUp() }, Modifier.weight(1f)) { Text("Vol +") }
                 }
             }
-
             item {
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
                     FilledTonalButton({ remote.playPause() }, Modifier.weight(1f)) { Text("Play / Pause") }
