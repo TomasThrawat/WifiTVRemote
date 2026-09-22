@@ -6,7 +6,7 @@ import java.io.OutputStream
 
 object Framing {
     fun write(o: OutputStream, b: ByteArray) {
-        AppLogger.v("Framing", "WRITE frame bytes=" + b.size)
+        
         var n = b.size
         while (n > 0x7f) {
             o.write((n and 0x7f) or 0x80)
@@ -23,7 +23,7 @@ object Framing {
         while (true) {
             val v = i.read()
             if (v < 0) {
-                AppLogger.w("Framing", "READ EOF while reading frame length")
+                
                 throw EOFException()
             }
             n = n or ((v and 0x7f) shl shift)
@@ -31,7 +31,7 @@ object Framing {
             shift += 7
             if (shift > 28) {
                 val error = IllegalArgumentException("Invalid protobuf frame length")
-                AppLogger.e("Framing", "Frame length varint exceeded supported size", error)
+                
                 throw error
             }
         }
@@ -40,12 +40,12 @@ object Framing {
         while (p < n) {
             val r = i.read(b, p, n - p)
             if (r < 0) {
-                AppLogger.w("Framing", "READ EOF after " + p + "/" + n + " payload bytes")
+                
                 throw EOFException()
             }
             p += r
         }
-        AppLogger.v("Framing", "READ frame bytes=" + b.size)
+        
         return b
     }
 }

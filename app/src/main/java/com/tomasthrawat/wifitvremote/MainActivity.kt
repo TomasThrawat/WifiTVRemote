@@ -22,20 +22,16 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AppLogger.i("MainActivity", "onCreate")
+        
         if (Build.VERSION.SDK_INT in 23..28 &&
             checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
         ) {
-            AppLogger.w("MainActivity", "Requesting legacy storage permission for public Downloads logging")
+            
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1001)
         }
         setContent { WifiTvRemoteTheme { Screen() } }
     }
 
-    override fun onDestroy() {
-        AppLogger.i("MainActivity", "onDestroy")
-        super.onDestroy()
-    }
 }
 
 @Composable
@@ -63,17 +59,14 @@ private fun Screen() {
     var status by remember { mutableStateOf("Wi‑Fi فقط • جاهز للبحث") }
 
     fun scan() {
-        AppLogger.i("UI", "Starting TV discovery")
+        
         devices.clear()
         status = "جاري البحث..."
         scope.launch {
             discovery.scan().collect { device ->
                 if (devices.none { it.host == device.host }) {
                     devices.add(device)
-                    AppLogger.i(
-                        "UI",
-                        "Discovered TV name=" + device.name + " host=" + device.host + " port=" + device.port
-                    )
+                    
                 }
                 status = "تم العثور على " + devices.size + " جهاز"
             }
@@ -81,10 +74,7 @@ private fun Screen() {
     }
 
     fun connect(device: TvDevice) {
-        AppLogger.i(
-            "UI",
-            "Connecting to TV name=" + device.name + " host=" + device.host + " port=" + device.port
-        )
+        
         status = "جاري الاتصال بـ " + device.name + "..."
         lateinit var r: TvRemote
         val p = TvPairing(
@@ -97,7 +87,7 @@ private fun Screen() {
                     host = device.host,
                     id = identity,
                     onReady = {
-                        AppLogger.i("UI", "Remote connection ready for host=" + device.host)
+                        
                         connected = true
                         remote = r
                         pairing = null
@@ -105,7 +95,7 @@ private fun Screen() {
                         showRemote = true
                     },
                     onError = { error ->
-                        AppLogger.e("UI", "Remote connection error for host=" + device.host, error)
+                        
                         connected = false
                         status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
                     }
@@ -114,18 +104,18 @@ private fun Screen() {
                 r.start()
             },
             onError = { error ->
-                AppLogger.e("UI", "Pairing error for host=" + device.host, error)
+                
                 status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
             }
         )
         pairing = p
-        AppLogger.d("UI", "Starting pairing for host=" + device.host)
+        
         p.start()
     }
 
     if (showRemote && connected && remote != null) {
         RemoteScreen(remote = remote!!, status = status, onBack = {
-            AppLogger.i("UI", "User requested disconnect")
+            
             remote?.stop()
             connected = false
             showRemote = false
@@ -144,7 +134,7 @@ private fun Screen() {
                 val submittedCode = code
                 scope.launch {
                     val p = pairing ?: return@launch
-                    AppLogger.i("UI", "Submitting pairing code length=" + submittedCode.length)
+                    
                     val success = p.submitCode(submittedCode)
                     status = if (success) "تم إرسال الرمز. انتظار التلفزيون..." else "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
                 }

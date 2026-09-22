@@ -18,7 +18,7 @@ object CertificateStore {
     private fun bcProvider(): BouncyCastleProvider = BouncyCastleProvider()
 
     fun loadOrCreate(c: Context, host: String): ClientIdentity {
-        AppLogger.d("CertificateStore", "Loading client identity for host=" + host)
+        
         val p = c.getSharedPreferences("tv_identities", Context.MODE_PRIVATE)
         val id = host.replace(Regex("[^0-9A-Za-z_.-]"), "_")
         val kb = p.getString("k_$id", null)
@@ -32,7 +32,7 @@ object CertificateStore {
                 .generateCertificate(
                     Base64.decode(cb, Base64.NO_WRAP).inputStream()
                 ) as X509Certificate
-            AppLogger.i("CertificateStore", "Loaded existing client identity for host=" + host)
+            
             return ClientIdentity(k, cert)
         }
 
@@ -64,7 +64,7 @@ object CertificateStore {
             .putString("c_$id", Base64.encodeToString(cert.encoded, Base64.NO_WRAP))
             .apply()
 
-        AppLogger.i("CertificateStore", "Created and stored new client identity for host=" + host)
+        
         return ClientIdentity(kp.private, cert)
     }
 }

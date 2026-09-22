@@ -60,7 +60,7 @@ class TvRemote(
     @Synchronized
     fun start() {
         if (connectionJob?.isActive == true) {
-            AppLogger.d("TvRemote", "start ignored; remote connection job already active")
+            
             return
         }
         stopped = false
@@ -76,91 +76,71 @@ class TvRemote(
                 resetSessionState()
                 closeSocketQuietly()
 
-                AppLogger.i("TvRemote", "Starting remote host=" + host + " port=6466")
+                
                 socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
-                AppLogger.d("TvRemote", "Connecting TCP host=" + host)
+                
                 socket!!.connect(InetSocketAddress(host, 6466), 8000)
-                AppLogger.i("TvRemote", "TCP connected host=" + host)
+                
                 socket!!.useClientMode = true
                 socket!!.startHandshake()
-                AppLogger.i("TvRemote", "TLS handshake complete host=" + host)
+                
 
                 val configurePayload = config(REQUESTED_FEATURES)
-                AppLogger.d(
-                    "TvRemote",
-                    "Sending RemoteConfigure features=" + REQUESTED_FEATURES + " bytes=" + configurePayload.size
-                )
+                
                 send(configurePayload)
                 configureSent = true
 
                 while (!stopped) {
                     val frame = Framing.read(socket!!.inputStream)
                     val message = RemoteMessage.parseFrom(frame)
-                    AppLogger.d(
-                        "TvRemote",
-                        "Received remote frame bytes=" + frame.size + " type=" + remoteMessageType(message)
-                    )
+                    
                     when {
                         message.hasRemoteConfigure() -> {
                             activeFeatures = REQUESTED_FEATURES and message.remoteConfigure.code1
-                            AppLogger.i(
-                                "TvRemote",
-                                "RemoteConfigure code1=" + message.remoteConfigure.code1 +
-                                    "; activeFeatures=" + activeFeatures
-                            )
+                            
                             if (configureSent && !activeSent) {
                                 val activePayload = RemoteMessage.newBuilder().setRemoteSetActive(
                                     RemoteSetActive.newBuilder().setActive(activeFeatures)
                                 ).build().toByteArray()
-                                AppLogger.d(
-                                    "TvRemote",
-                                    "Sending RemoteSetActive activeFeatures=" + activeFeatures +
-                                        " bytes=" + activePayload.size
-                                )
+                                
                                 send(activePayload)
                                 activeSent = true
                             }
                         }
                         message.hasRemoteSetActive() -> {
                             handshakeReady = true
-                            AppLogger.i("TvRemote", "RemoteSetActive received; connection ready")
+                            
                             postMain(onReady)
                             reconnectAttempt = 0
                         }
                         message.hasRemoteStart() -> {
                             if (activeSent && !handshakeReady) {
                                 handshakeReady = true
-                                AppLogger.i("TvRemote", "RemoteStart received; connection ready")
+                                
                                 postMain(onReady)
                                 reconnectAttempt = 0
                             }
                         }
                         message.hasRemotePingRequest() -> {
-                            AppLogger.v("TvRemote", "Received RemotePingRequest val1=" + message.remotePingRequest.val1)
+                            
                             val pingPayload = RemoteMessage.newBuilder().setRemotePingResponse(
                                 RemotePingResponse.newBuilder().setVal1(message.remotePingRequest.val1)
                             ).build().toByteArray()
-                            AppLogger.v("TvRemote", "Sending RemotePingResponse bytes=" + pingPayload.size)
+                            
                             send(pingPayload)
                         }
                         message.hasRemoteImeBatchEdit() -> {
                             val edit = message.remoteImeBatchEdit
                             imeCounter = edit.imeCounter
                             fieldCounter = edit.fieldCounter
-                            AppLogger.d(
-                                "TvRemote",
-                                "IME batch edit active imeCounter=" + imeCounter + " fieldCounter=" + fieldCounter
-                            )
+                            
                             postMain { textStateListener?.invoke(true) }
                         }
                         message.hasRemoteImeKeyInject() -> {
                             val state = message.remoteImeKeyInject
                             if (state.hasTextFieldStatus()) {
                                 fieldCounter = state.textFieldStatus.counterField
-                                AppLogger.d(
-                                    "TvRemote",
-                                    "IME key inject reports active text field counter=" + fieldCounter
-                                )
+                                
                                 postMain { textStateListener?.invoke(true) }
                             }
                         }
@@ -168,16 +148,13 @@ class TvRemote(
                             val state = message.remoteImeShowRequest
                             if (state.hasRemoteTextFieldStatus()) {
                                 fieldCounter = state.remoteTextFieldStatus.counterField
-                                AppLogger.d(
-                                    "TvRemote",
-                                    "IME show request reports active text field counter=" + fieldCounter
-                                )
+                                
                                 postMain { textStateListener?.invoke(true) }
                             }
                         }
                         message.hasRemoteError() -> {
                             val error = IllegalStateException("TV returned a remote protocol error")
-                            AppLogger.e("TvRemote", "TV returned RemoteError", error)
+                            
                             postMain { onError(error) }
                         }
                     }
@@ -186,26 +163,22 @@ class TvRemote(
             } catch (e: java.io.EOFException) {
                 if (stopped) break
                 if (handshakeReady) {
-                    AppLogger.w("TvRemote", "Remote channel closed after handshake; reconnecting", e)
+                    
                 } else {
-                    AppLogger.e("TvRemote", "EOF before remote handshake completed", e)
+                    
                 }
             } catch (e: java.net.SocketException) {
                 if (stopped) break
                 if (handshakeReady) {
-                    AppLogger.w(
-                        "TvRemote",
-                        "Remote socket disconnected (" + (e.message ?: e.javaClass.simpleName) + "); reconnecting",
-                        e
-                    )
+                    
                 } else {
-                    AppLogger.e("TvRemote", "Remote socket failure before handshake completed", e)
+                    
                     postMain { onError(e) }
                     break
                 }
             } catch (t: Throwable) {
                 if (stopped) break
-                AppLogger.e("TvRemote", "Remote loop failed", t)
+                
                 postMain { onError(t) }
                 break
             } finally {
@@ -218,18 +191,14 @@ class TvRemote(
             reconnectAttempt++
             if (reconnectAttempt > MAX_RECONNECT_ATTEMPTS) {
                 val error = IllegalStateException("Remote connection lost after $MAX_RECONNECT_ATTEMPTS reconnect attempts")
-                AppLogger.e("TvRemote", "Remote reconnect limit reached", error)
+                
                 postMain { onError(error) }
                 break
             }
 
             val delayMs = (INITIAL_RECONNECT_DELAY_MS shl (reconnectAttempt - 1).coerceAtMost(4))
                 .coerceAtMost(MAX_RECONNECT_DELAY_MS)
-            AppLogger.i(
-                "TvRemote",
-                "Reconnecting attempt=" + reconnectAttempt + "/" + MAX_RECONNECT_ATTEMPTS +
-                    " delayMs=" + delayMs
-            )
+            
             delay(delayMs)
         }
     }
@@ -252,7 +221,7 @@ class TvRemote(
         try {
             current?.close()
         } catch (t: Throwable) {
-            AppLogger.w("TvRemote", "Socket close failed", t)
+            
         }
     }
 
@@ -269,16 +238,16 @@ class TvRemote(
         ioScope.launch {
             try {
                 if (!handshakeReady) {
-                    AppLogger.w("TvRemote", "Ignoring key=" + key.name + " because connection is not ready")
+                    
                     return@launch
                 }
-                AppLogger.i("TvRemote", "Sending key=" + key.name)
+                
                 send(RemoteMessage.newBuilder().setRemoteKeyInject(
                     RemoteKeyInject.newBuilder().setKeyCode(key.number)
                         .setDirection(RemoteKeyInject.Direction.SHORT)
                 ).build().toByteArray())
             } catch (t: Throwable) {
-                AppLogger.e("TvRemote", "Key send failed key=" + key.name, t)
+                
                 postMain { onError(t) }
             }
         }
@@ -288,15 +257,10 @@ class TvRemote(
         ioScope.launch {
             try {
                 if (!handshakeReady) {
-                    AppLogger.w("TvRemote", "Ignoring text send because connection is not ready")
+                    
                     return@launch
                 }
-                AppLogger.i(
-                    "TvRemote",
-                    "Sending text length=" + text.length +
-                        " imeCounter=" + imeCounter +
-                        " fieldCounter=" + fieldCounter
-                )
+                
                 val position = text.length.coerceAtLeast(1) - 1
                 send(RemoteMessage.newBuilder().setRemoteImeBatchEdit(
                     RemoteImeBatchEdit.newBuilder()
@@ -307,14 +271,14 @@ class TvRemote(
                         ))
                 ).build().toByteArray())
             } catch (t: Throwable) {
-                AppLogger.e("TvRemote", "Text send failed length=" + text.length, t)
+                
                 postMain { onError(t) }
             }
         }
     }
 
     fun clearText() {
-        AppLogger.i("TvRemote", "Clearing active TV text field")
+        
         sendText("")
     }
     fun power() = key(RemoteKeyCode.KeyCode.KEYCODE_POWER)
@@ -335,7 +299,7 @@ class TvRemote(
 
     @Synchronized
     fun stop() {
-        AppLogger.i("TvRemote", "Stopping remote host=" + host)
+        
         stopped = true
         connectionJob?.cancel()
         connectionJob = null
