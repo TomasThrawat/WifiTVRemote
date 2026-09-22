@@ -2,8 +2,6 @@ package com.tomasthrawat.wifitvremote
 
 import android.os.Build
 import android.os.Bundle
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,12 +21,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        if (Build.VERSION.SDK_INT in 23..28 &&
-            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-        ) {
-            
-            requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1001)
-        }
         setContent { WifiTvRemoteTheme { Screen() } }
     }
 
