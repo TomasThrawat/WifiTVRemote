@@ -18,8 +18,10 @@ import java.net.InetSocketAddress
 import javax.net.ssl.SSLSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class TvRemote(
@@ -29,14 +31,21 @@ class TvRemote(
     private val onError: (Throwable) -> Unit,
     onTextStateChanged: (Boolean) -> Unit = {}
 ) {
-    companion object { private const val REQUESTED_FEATURES = 622 }
+    companion object {
+        private const val REQUESTED_FEATURES = 622
+        private const val MAX_RECONNECT_ATTEMPTS = 5
+        private const val INITIAL_RECONNECT_DELAY_MS = 1_000L
+        private const val MAX_RECONNECT_DELAY_MS = 15_000L
+    }
 
     private var textStateListener: ((Boolean) -> Unit)? = onTextStateChanged
     private var socket: SSLSocket? = null
     private var activeFeatures = REQUESTED_FEATURES
-    private var handshakeReady = false
+    @Volatile private var handshakeReady = false
     private var configureSent = false
     private var activeSent = false
+    @Volatile private var stopped = false
+    private var connectionJob: Job? = null
     private var imeCounter = 0
     private var fieldCounter = 0
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -48,10 +57,26 @@ class TvRemote(
 
     private fun postMain(block: () -> Unit) = mainHandler.post(block)
 
+    @Synchronized
     fun start() {
-        AppLogger.i("TvRemote", "Starting remote host=" + host + " port=6466")
-        ioScope.launch {
+        if (connectionJob?.isActive == true) {
+            AppLogger.d("TvRemote", "start ignored; remote connection job already active")
+            return
+        }
+        stopped = false
+        connectionJob = ioScope.launch {
+            runConnectionLoop()
+        }
+    }
+
+    private suspend fun runConnectionLoop() {
+        var reconnectAttempt = 0
+        while (!stopped) {
             try {
+                resetSessionState()
+                closeSocketQuietly()
+
+                AppLogger.i("TvRemote", "Starting remote host=" + host + " port=6466")
                 socket = Tls.context(id).socketFactory.createSocket() as SSLSocket
                 AppLogger.d("TvRemote", "Connecting TCP host=" + host)
                 socket!!.connect(InetSocketAddress(host, 6466), 8000)
@@ -59,6 +84,7 @@ class TvRemote(
                 socket!!.useClientMode = true
                 socket!!.startHandshake()
                 AppLogger.i("TvRemote", "TLS handshake complete host=" + host)
+
                 val configurePayload = config(REQUESTED_FEATURES)
                 AppLogger.d(
                     "TvRemote",
@@ -66,7 +92,8 @@ class TvRemote(
                 )
                 send(configurePayload)
                 configureSent = true
-                while (true) {
+
+                while (!stopped) {
                     val frame = Framing.read(socket!!.inputStream)
                     val message = RemoteMessage.parseFrom(frame)
                     AppLogger.d(
@@ -98,12 +125,14 @@ class TvRemote(
                             handshakeReady = true
                             AppLogger.i("TvRemote", "RemoteSetActive received; connection ready")
                             postMain(onReady)
+                            reconnectAttempt = 0
                         }
                         message.hasRemoteStart() -> {
                             if (activeSent && !handshakeReady) {
                                 handshakeReady = true
                                 AppLogger.i("TvRemote", "RemoteStart received; connection ready")
                                 postMain(onReady)
+                                reconnectAttempt = 0
                             }
                         }
                         message.hasRemotePingRequest() -> {
@@ -153,23 +182,77 @@ class TvRemote(
                         }
                     }
                 }
+                break
             } catch (e: java.io.EOFException) {
-                // The TV can close the remote channel cleanly after a completed handshake.
-                // Do not surface that normal stream termination as a protocol error.
+                if (stopped) break
                 if (handshakeReady) {
-                    handshakeReady = false
-                    AppLogger.w("TvRemote", "EOF after completed handshake; channel closed by TV", e)
-                    try { socket?.close() } catch (closeError: Throwable) {
-                        AppLogger.w("TvRemote", "Socket close after EOF failed", closeError)
-                    }
+                    AppLogger.w("TvRemote", "Remote channel closed after handshake; reconnecting", e)
                 } else {
-                    AppLogger.e("TvRemote", "EOF before handshake completed", e)
+                    AppLogger.e("TvRemote", "EOF before remote handshake completed", e)
+                }
+            } catch (e: java.net.SocketException) {
+                if (stopped) break
+                if (handshakeReady) {
+                    AppLogger.w(
+                        "TvRemote",
+                        "Remote socket disconnected (" + (e.message ?: e.javaClass.simpleName) + "); reconnecting",
+                        e
+                    )
+                } else {
+                    AppLogger.e("TvRemote", "Remote socket failure before handshake completed", e)
                     postMain { onError(e) }
+                    break
                 }
             } catch (t: Throwable) {
+                if (stopped) break
                 AppLogger.e("TvRemote", "Remote loop failed", t)
                 postMain { onError(t) }
+                break
+            } finally {
+                handshakeReady = false
+                closeSocketQuietly()
             }
+
+            if (stopped) break
+
+            reconnectAttempt++
+            if (reconnectAttempt > MAX_RECONNECT_ATTEMPTS) {
+                val error = IllegalStateException("Remote connection lost after $MAX_RECONNECT_ATTEMPTS reconnect attempts")
+                AppLogger.e("TvRemote", "Remote reconnect limit reached", error)
+                postMain { onError(error) }
+                break
+            }
+
+            val delayMs = (INITIAL_RECONNECT_DELAY_MS shl (reconnectAttempt - 1).coerceAtMost(4))
+                .coerceAtMost(MAX_RECONNECT_DELAY_MS)
+            AppLogger.i(
+                "TvRemote",
+                "Reconnecting attempt=" + reconnectAttempt + "/" + MAX_RECONNECT_ATTEMPTS +
+                    " delayMs=" + delayMs
+            )
+            delay(delayMs)
+        }
+    }
+
+    private fun resetSessionState() {
+        activeFeatures = REQUESTED_FEATURES
+        handshakeReady = false
+        configureSent = false
+        activeSent = false
+        imeCounter = 0
+        fieldCounter = 0
+    }
+
+    private fun closeSocketQuietly() {
+        val current = synchronized(this) {
+            val value = socket
+            socket = null
+            value
+        }
+        try {
+            current?.close()
+        } catch (t: Throwable) {
+            AppLogger.w("TvRemote", "Socket close failed", t)
         }
     }
 
@@ -250,17 +333,20 @@ class TvRemote(
     fun delete() = key(RemoteKeyCode.KeyCode.KEYCODE_DEL)
     fun space() = key(RemoteKeyCode.KeyCode.KEYCODE_SPACE)
 
+    @Synchronized
     fun stop() {
         AppLogger.i("TvRemote", "Stopping remote host=" + host)
+        stopped = true
+        connectionJob?.cancel()
+        connectionJob = null
         ioScope.cancel()
-        try { socket?.close() } catch (t: Throwable) {
-            AppLogger.w("TvRemote", "Socket close failed during stop", t)
-        }
+        closeSocketQuietly()
     }
 
     private fun send(bytes: ByteArray) {
         synchronized(this) {
-            Framing.write(socket!!.outputStream, bytes)
+            val current = socket ?: throw java.io.IOException("Remote socket is not connected")
+            Framing.write(current.outputStream, bytes)
         }
     }
 
