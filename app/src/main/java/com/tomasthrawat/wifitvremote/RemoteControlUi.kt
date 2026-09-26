@@ -171,178 +171,236 @@ private fun RemoteReferenceLayout(
     onDisconnect: () -> Unit,
     onSetup: () -> Unit
 ) {
-    Row(
-        Modifier
+    Column(
+        modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .background(AppBlack)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            Modifier.weight(1.45f),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(43.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DecorativeHeaderButton("⏻")
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    "Samsung Smart TV",
+                    color = AppText,
+                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Box(
+                        Modifier
+                            .size(5.dp)
+                            .clip(CircleShape)
+                            .background(AppGreen)
+                    )
+                    Text(
+                        if (status == "متصل") "Connected" else status,
+                        color = AppGreen,
+                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                        maxLines = 1
+                    )
+                }
+            }
+            DecorativeHeaderButton("◖")
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(30.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            CompactButton("SETUP", Modifier.weight(1f), onSetup)
+            CompactButton("SOURCE", Modifier.weight(1f), remote::input)
+            CompactButton("EXIT", Modifier.weight(1f), remote::back)
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(154.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            VolumeRocker(remote, Modifier.size(width = 50.dp, height = 148.dp))
+            DPad(remote, Modifier.size(150.dp))
+            ChannelCluster(remote, Modifier.width(54.dp))
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(31.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SmallCircleButton("↶", remote::back)
+            SmallCircleButton("⌂", remote::home)
+            SmallCircleButton("⋯", remote::menu)
+        }
+
+        NumberPad(
+            remote = remote,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .height(182.dp)
+        )
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            color = AppSurface,
+            shape = RoundedCornerShape(12.dp)
         ) {
             Row(
-                Modifier.fillMaxWidth(),
+                modifier = Modifier.padding(start = 7.dp, end = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        "Samsung Smart TV",
-                        color = AppText,
-                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = onTextChange,
+                    modifier = Modifier.weight(1f),
+                    enabled = textReady,
+                    singleLine = true,
+                    placeholder = {
+                        Text("Type on TV", color = AppMuted)
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = AppText,
+                        unfocusedTextColor = AppText,
+                        focusedBorderColor = AppBlue,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledBorderColor = Color.Transparent
                     )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Box(
-                            Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(AppGreen)
-                        )
-                        Text(
-                            if (status == "متصل") "Connected" else status,
-                            color = AppGreen,
-                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-                Surface(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape),
-                    color = AppSurface2,
-                    shape = CircleShape,
-                    onClick = onDisconnect
+                )
+                TextButton(
+                    onClick = onSend,
+                    enabled = textReady && text.isNotEmpty()
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("×", color = AppText, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                CompactButton("SETUP", Modifier.weight(1f), onSetup)
-                CompactButton("SOURCE", Modifier.weight(1f), remote::input)
-                CompactButton("EXIT", Modifier.weight(0.8f), remote::back)
-            }
-
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DPad(remote, Modifier.weight(1.35f))
-                Column(
-                    Modifier.weight(0.75f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    RemoteSideButton("LIST", remote::menu)
-                    RemoteSideButton("CH+", remote::channelUp)
-                    RemoteSideButton("CH−", remote::channelDown)
-                }
-            }
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                StreamButton("Prime Video", Modifier.weight(1f)) {
-                    remote.launchAppLink("https://www.primevideo.com/")
-                }
-                StreamButton("YouTube", Modifier.weight(1f)) {
-                    remote.launchAppLink("https://www.youtube.com/")
-                }
-                StreamButton("NETFLIX", Modifier.weight(1f)) {
-                    remote.launchAppLink("https://www.netflix.com/")
+                    Text("Send", color = if (textReady) AppBlue else AppMuted)
                 }
             }
         }
 
-        Column(
-            Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(33.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            NumberPad(remote, Modifier.weight(1f))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = AppSurface,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    Modifier.padding(start = 7.dp, end = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = text,
-                        onValueChange = onTextChange,
-                        modifier = Modifier.weight(1f),
-                        enabled = textReady,
-                        singleLine = true,
-                        placeholder = {
-                            Text("Type on TV", color = AppMuted)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = AppText,
-                            unfocusedTextColor = AppText,
-                            focusedBorderColor = AppBlue,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledBorderColor = Color.Transparent
-                        )
-                    )
-                    TextButton(
-                        onClick = onSend,
-                        enabled = textReady && text.isNotEmpty()
-                    ) {
-                        Text("Send", color = if (textReady) AppBlue else AppMuted)
-                    }
-                }
+            StreamButton("NETFLIX", Modifier.weight(1f)) {
+                remote.launchAppLink("https://www.netflix.com/")
+            }
+            StreamButton("YouTube", Modifier.weight(1f)) {
+                remote.launchAppLink("https://www.youtube.com/")
+            }
+            StreamButton("Prime Video", Modifier.weight(1f)) {
+                remote.launchAppLink("https://www.primevideo.com/")
             }
         }
     }
 }
 
 @Composable
-private fun CompactButton(
+private fun DecorativeHeaderButton(label: String) {
+    Surface(
+        modifier = Modifier.size(30.dp),
+        color = AppSurface2,
+        shape = CircleShape
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                color = AppText,
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+}
+
+@Composable
+private fun VolumeRocker(
+    remote: TvRemote,
+    modifier: Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(25.dp))
+            .background(AppSurface)
+            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(25.dp)),
+        verticalArrangement = Arrangement.Center
+    ) {
+        RockerButton("+", remote::volumeUp, Modifier.weight(1f))
+        RockerButton("●", remote::mute, Modifier.weight(1f))
+        RockerButton("−", remote::volumeDown, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun RockerButton(
     label: String,
-    modifier: Modifier,
+    onClick: () -> Unit,
+    modifier: Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = Color.Transparent,
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                color = AppText,
+                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChannelCluster(
+    remote: TvRemote,
+    modifier: Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        RemoteSideButton("LIST", remote::menu)
+        RemoteSideButton("CH+", remote::channelUp)
+        RemoteSideButton("CH−", remote::channelDown)
+    }
+}
+
+@Composable
+private fun SmallCircleButton(
+    label: String,
     onClick: () -> Unit
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(34.dp),
-        shape = RoundedCornerShape(9.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppText),
-        contentPadding = PaddingValues(horizontal = 8.dp)
-    ) {
-        Text(
-            label,
-            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun RemoteSideButton(label: String, onClick: () -> Unit) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(38.dp),
+        modifier = Modifier.size(31.dp),
         color = AppSurface2,
-        shape = RoundedCornerShape(10.dp),
+        shape = CircleShape,
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
@@ -362,7 +420,6 @@ private fun DPad(
 ) {
     Box(
         modifier
-            .fillMaxSize()
             .clip(CircleShape)
             .background(AppSurface)
             .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape),
@@ -373,7 +430,7 @@ private fun DPad(
         DPadKey(Modifier.align(Alignment.CenterEnd), "▶", remote::right)
         DPadKey(Modifier.align(Alignment.BottomCenter), "▼", remote::down)
         Surface(
-            modifier = Modifier.size(62.dp),
+            modifier = Modifier.size(58.dp),
             color = AppBlue,
             shape = CircleShape,
             onClick = remote::ok
@@ -392,7 +449,7 @@ private fun DPadKey(
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = modifier.size(42.dp),
+        modifier = modifier.size(40.dp),
         color = Color.White.copy(alpha = 0.045f),
         shape = CircleShape,
         onClick = onClick
@@ -465,7 +522,7 @@ private fun NumberKey(
 private fun StreamButton(label: String, modifier: Modifier, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(35.dp),
+        modifier = modifier.height(33.dp),
         shape = RoundedCornerShape(9.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = AppSurface2,
