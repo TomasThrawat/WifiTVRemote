@@ -279,13 +279,8 @@ class TvRemote(
 
                         message.hasRemoteError() -> {
                             val remoteError = message.remoteError
-                            val detail = buildString {
-                                append("TV returned a remote protocol error")
-                                if (remoteError.hasMessage()) {
-                                    append(": ")
-                                    append(remoteError.message.toString())
-                                }
-                            }
+                            val detail = "TV returned a remote protocol error: " +
+                                message.remoteError.toString()
                             postForSession(thisGeneration, thisSession) {
                                 onError(IllegalStateException(detail))
                             }
