@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import remote.RemoteKeyCode
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.unit.dp
@@ -153,9 +154,9 @@ fun RemoteScreen(
 
                     SideControlColumn(
                         labels = RemoteUiSpec.channelControls,
-                        onFirst = { remote.channelUp() },
-                        onMiddle = { remote.menu() },
-                        onLast = { remote.channelDown() }
+                        onFirst = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_CHANNEL_UP) },
+                        onMiddle = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_MENU) },
+                        onLast = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_CHANNEL_DOWN) }
                     )
                 }
             }
