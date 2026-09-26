@@ -454,6 +454,32 @@ class TvRemote(
         )
     ).build().toByteArray()
 
+    private fun rawKeyCode(keyCode: Int) {
+        val request = synchronized(lock) {
+            if (!handshakeReady || explicitlyStopped || !running) {
+                null
+            } else {
+                Triple(generation, sessionSequence, ioScope)
+            }
+        } ?: return
+
+        request.third?.launch {
+            try {
+                send(
+                    request.first,
+                    request.second,
+                    RemoteMessage.newBuilder().setRemoteKeyInject(
+                        RemoteKeyInject.newBuilder()
+                            .setKeyCode(keyCode)
+                            .setDirection(RemoteKeyInject.Direction.SHORT)
+                    ).build().toByteArray()
+                )
+            } catch (t: Throwable) {
+                abortSession(request.first, request.second)
+            }
+        }
+    }
+
     fun key(key: RemoteKeyCode.KeyCode) {
         val request = synchronized(lock) {
             if (!handshakeReady || explicitlyStopped || !running) {
@@ -580,6 +606,9 @@ class TvRemote(
     fun volumeUp() = key(RemoteKeyCode.KeyCode.KEYCODE_VOLUME_UP)
     fun volumeDown() = key(RemoteKeyCode.KeyCode.KEYCODE_VOLUME_DOWN)
     fun mute() = key(RemoteKeyCode.KeyCode.KEYCODE_MUTE)
+    fun channelUp() = rawKeyCode(166)
+    fun channelDown() = rawKeyCode(167)
+    fun menu() = rawKeyCode(82)
     fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
     fun enter() = key(RemoteKeyCode.KeyCode.KEYCODE_ENTER)
     fun delete() = key(RemoteKeyCode.KeyCode.KEYCODE_DEL)

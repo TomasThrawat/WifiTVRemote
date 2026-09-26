@@ -109,7 +109,7 @@ fun RemoteScreen(
                     onClick = onDisconnect
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("Ã", color = RemoteText, style = MaterialTheme.typography.titleMedium)
+                        Text("\u00D7", color = RemoteText, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }
@@ -153,9 +153,9 @@ fun RemoteScreen(
 
                     SideControlColumn(
                         labels = RemoteUiSpec.channelControls,
-                        onFirst = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_CHANNEL_UP) },
-                        onMiddle = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_MENU) },
-                        onLast = { remote.key(RemoteKeyCode.KeyCode.KEYCODE_CHANNEL_DOWN) }
+                        onFirst = { remote.channelUp() },
+                        onMiddle = { remote.menu() },
+                        onLast = { remote.channelDown() }
                     )
                 }
             }
@@ -314,22 +314,22 @@ private fun DPad(remote: TvRemote) {
 
         DPadButton(
             modifier = Modifier.align(Alignment.TopCenter),
-            text = "â",
+            text = "\u2191",
             onClick = { remote.up() }
         )
         DPadButton(
             modifier = Modifier.align(Alignment.CenterStart),
-            text = "â",
+            text = "\u2190",
             onClick = { remote.left() }
         )
         DPadButton(
             modifier = Modifier.align(Alignment.CenterEnd),
-            text = "â",
+            text = "\u2192",
             onClick = { remote.right() }
         )
         DPadButton(
             modifier = Modifier.align(Alignment.BottomCenter),
-            text = "â",
+            text = "\u2193",
             onClick = { remote.down() }
         )
 
