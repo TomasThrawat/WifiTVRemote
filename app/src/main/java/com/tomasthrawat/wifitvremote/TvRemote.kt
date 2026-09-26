@@ -3,6 +3,7 @@ package com.tomasthrawat.wifitvremote
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import remote.RemoteAppLinkLaunchRequest
 import remote.RemoteConfigure
 import remote.RemoteDeviceInfo
 import remote.RemoteEditInfo
@@ -188,15 +189,16 @@ class TvRemote(
 
                             if (activePayload != null) {
                                 send(thisGeneration, thisSession, activePayload)
-                                if (markHandshakeReady(thisGeneration, thisSession)) {
-                                    reconnectAttempt = 0
-                                    postReady(thisGeneration, thisSession)
-                                }
                             }
                         }
 
                         message.hasRemoteStart() -> {
-                            // Informational only; RemoteSetActive marks handshake readiness.
+                            if (message.remoteStart.started &&
+                                markHandshakeReady(thisGeneration, thisSession)
+                            ) {
+                                reconnectAttempt = 0
+                                postReady(thisGeneration, thisSession)
+                            }
                         }
 
                         message.hasRemotePingRequest() -> {
@@ -588,6 +590,36 @@ class TvRemote(
 
             val current = socket ?: throw IOException("Remote socket is not connected")
             Framing.write(current.outputStream, bytes)
+        }
+    }
+
+    fun launchAppLink(appLink: String) {
+        val link = appLink.trim()
+        if (link.isEmpty()) return
+        val request = synchronized(lock) {
+            if (!handshakeReady || explicitlyStopped || !running) {
+                null
+            } else {
+                Triple(generation, sessionSequence, ioScope)
+            }
+        } ?: return
+
+        request.third?.launch {
+            try {
+                send(
+                    request.first,
+                    request.second,
+                    RemoteMessage.newBuilder()
+                        .setRemoteAppLinkLaunchRequest(
+                            RemoteAppLinkLaunchRequest.newBuilder()
+                                .setAppLink(link)
+                        )
+                        .build()
+                        .toByteArray()
+                )
+            } catch (t: Throwable) {
+                abortSession(request.first, request.second)
+            }
         }
     }
 
