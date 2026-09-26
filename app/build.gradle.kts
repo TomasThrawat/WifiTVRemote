@@ -29,9 +29,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        jvmToolchain(17)
-    }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -46,6 +47,7 @@ dependencies {
     implementation("com.google.protobuf:protobuf-javalite:4.34.1")
     implementation("org.bouncycastle:bcprov-jdk18on:1.82")
     implementation("org.bouncycastle:bcpkix-jdk18on:1.82")
+    testImplementation("junit:junit:4.13.2")
 }
 
 protobuf {
