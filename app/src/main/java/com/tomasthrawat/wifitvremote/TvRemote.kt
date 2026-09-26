@@ -641,6 +641,17 @@ class TvRemote(
     fun channelUp() = rawKeyCode(166)
     fun channelDown() = rawKeyCode(167)
     fun menu() = rawKeyCode(82)
+    fun input() = rawKeyCode(178)
+    fun number(number: Int) {
+        val code = when (number) {
+            0 -> 7
+            in 1..9 -> number + 7
+            else -> return
+        }
+        rawKeyCode(code)
+    }
+    fun star() = rawKeyCode(17)
+    fun pound() = rawKeyCode(18)
     fun playPause() = key(RemoteKeyCode.KeyCode.KEYCODE_MEDIA_PLAY_PAUSE)
     fun enter() = key(RemoteKeyCode.KeyCode.KEYCODE_ENTER)
     fun delete() = key(RemoteKeyCode.KeyCode.KEYCODE_DEL)
