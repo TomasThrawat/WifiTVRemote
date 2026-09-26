@@ -415,6 +415,26 @@ private fun ChannelCluster(
 }
 
 @Composable
+private fun RemoteSideButton(label: String, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(38.dp),
+        color = AppSurface2,
+        shape = RoundedCornerShape(9.dp),
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                label,
+                color = AppText,
+                style = androidx.compose.material3.MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+@Composable
 private fun SmallCircleButton(
     label: String,
     onClick: () -> Unit
