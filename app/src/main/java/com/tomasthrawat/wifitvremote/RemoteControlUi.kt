@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,7 +58,8 @@ private enum class Destination { REMOTE, APPS, SETTINGS }
 fun RemoteScreen(
     remote: TvRemote,
     status: String,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
+    onSetup: () -> Unit
 ) {
     var destination by rememberSaveable { mutableStateOf(Destination.REMOTE.name) }
     var text by remember { mutableStateOf("") }
@@ -119,7 +119,8 @@ fun RemoteScreen(
                             remote.sendText(text)
                             text = ""
                         },
-                        onDisconnect = onDisconnect
+                        onDisconnect = onDisconnect,
+                        onSetup = { destination = Destination.SETTINGS.name }
                     )
                     Destination.APPS.name -> AppsPage(remote)
                     Destination.SETTINGS.name -> SettingsPage(status, onDisconnect)
@@ -227,7 +228,7 @@ private fun RemoteReferenceLayout(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                CompactButton("SETUP", Modifier.weight(1f)) {}
+                CompactButton("SETUP", Modifier.weight(1f), onSetup)
                 CompactButton("SOURCE", Modifier.weight(1f), remote::input)
                 CompactButton("EXIT", Modifier.weight(0.8f), remote::back)
             }
