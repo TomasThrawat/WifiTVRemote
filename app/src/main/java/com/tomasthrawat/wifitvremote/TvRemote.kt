@@ -144,57 +144,54 @@ class TvRemote(
                 newSocket.connect(InetSocketAddress(host, 6466), 8_000)
                 newSocket.startHandshake()
 
-                send(
-                    thisGeneration,
-                    thisSession,
-                    config(REQUESTED_FEATURES)
-                )
-
-                synchronized(lock) {
-                    if (generation == thisGeneration &&
-                        sessionSequence == thisSession &&
-                        !explicitlyStopped
-                    ) {
-                        configureSent = true
-                    }
-                }
-
                 while (isSessionActive(thisGeneration, thisSession)) {
                     val frame = Framing.read(newSocket.inputStream)
                     val message = RemoteMessage.parseFrom(frame)
 
                     when {
                         message.hasRemoteConfigure() -> {
-                            val activePayload = synchronized(lock) {
+                            val configurePayload = synchronized(lock) {
                                 if (generation != thisGeneration ||
                                     sessionSequence != thisSession ||
-                                    explicitlyStopped
+                                    explicitlyStopped ||
+                                    configureSent
                                 ) {
                                     null
                                 } else {
-                                    activeFeatures =
-                                        REQUESTED_FEATURES and message.remoteConfigure.code1
-                                    if (configureSent && !activeSent) {
-                                        activeSent = true
-                                        RemoteMessage.newBuilder().setRemoteSetActive(
-                                            RemoteSetActive.newBuilder()
-                                                .setActive(activeFeatures)
-                                        ).build().toByteArray()
-                                    } else {
-                                        null
-                                    }
+                                    activeFeatures = REQUESTED_FEATURES
+                                    configureSent = true
+                                    config(REQUESTED_FEATURES)
+                                }
+                            }
+
+                            if (configurePayload != null) {
+                                send(thisGeneration, thisSession, configurePayload)
+                            }
+                        }
+
+                        message.hasRemoteSetActive() -> {
+                            val activePayload = synchronized(lock) {
+                                if (generation != thisGeneration ||
+                                    sessionSequence != thisSession ||
+                                    explicitlyStopped ||
+                                    activeSent
+                                ) {
+                                    null
+                                } else {
+                                    activeSent = true
+                                    RemoteMessage.newBuilder().setRemoteSetActive(
+                                        RemoteSetActive.newBuilder()
+                                            .setActive(REQUESTED_FEATURES)
+                                    ).build().toByteArray()
                                 }
                             }
 
                             if (activePayload != null) {
                                 send(thisGeneration, thisSession, activePayload)
-                            }
-                        }
-
-                        message.hasRemoteSetActive() -> {
-                            if (markHandshakeReady(thisGeneration, thisSession)) {
-                                reconnectAttempt = 0
-                                postReady(thisGeneration, thisSession)
+                                if (markHandshakeReady(thisGeneration, thisSession)) {
+                                    reconnectAttempt = 0
+                                    postReady(thisGeneration, thisSession)
+                                }
                             }
                         }
 
@@ -452,7 +449,7 @@ class TvRemote(
                 .setVendor(Build.MANUFACTURER)
                 .setUnknown1(1)
                 .setUnknown2("1")
-                .setPackageName("atvremote2")
+                .setPackageName("androitv-remote")
                 .setAppVersion("1.0.0")
         )
     ).build().toByteArray()
