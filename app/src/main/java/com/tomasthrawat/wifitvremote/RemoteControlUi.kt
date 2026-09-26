@@ -168,7 +168,8 @@ private fun RemoteReferenceLayout(
     textReady: Boolean,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
-    onDisconnect: () -> Unit
+    onDisconnect: () -> Unit,
+    onSetup: () -> Unit
 ) {
     Row(
         Modifier
