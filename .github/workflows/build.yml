@@ -30,19 +30,42 @@ jobs:
           gradle-version: "9.6.0"
           cache-read-only: true
 
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon
+      - name: Run unit tests and build debug/release
+        run: gradle :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease --no-daemon --warning-mode=all
 
-      - name: Upload APK
+      - name: Verify APK outputs
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/release/app-release-unsigned.apk
+          echo "Debug SHA-256:"
+          sha256sum app/build/outputs/apk/debug/app-debug.apk
+          echo "Release SHA-256:"
+          sha256sum app/build/outputs/apk/release/app-release-unsigned.apk
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v7.0.1
         with:
           name: WifiTVRemote-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Release
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: WifiTVRemote-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.0.0-build-$GITHUB_RUN_NUMBER"
-          gh release create "$TAG" app/build/outputs/apk/debug/app-debug.apk --title "Wi-Fi TV Remote $TAG" --notes "Native Kotlin Android TV Remote Protocol v2 client."
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
+          RELEASE_APK="app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$DEBUG_APK" "$RELEASE_APK" --clobber
+          else
+            gh release create "$TAG" "$DEBUG_APK" "$RELEASE_APK"               --title "Wi-Fi TV Remote $TAG"               --notes "Native Kotlin Android TV Remote Protocol v2 client."
+          fi
