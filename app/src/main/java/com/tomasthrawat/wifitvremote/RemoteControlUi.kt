@@ -161,6 +161,28 @@ private fun BottomItem(
 }
 
 @Composable
+private fun CompactButton(
+    label: String,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(30.dp),
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppText),
+        contentPadding = PaddingValues(horizontal = 6.dp)
+    ) {
+        Text(
+            label,
+            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
 private fun RemoteReferenceLayout(
     remote: TvRemote,
     status: String,
