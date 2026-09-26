@@ -337,7 +337,7 @@ private fun CompactButton(
 @Composable
 private fun RemoteSideButton(label: String, onClick: () -> Unit) {
     Surface(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(38.dp),
         color = AppSurface2,
