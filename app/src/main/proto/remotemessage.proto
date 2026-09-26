@@ -11,7 +11,7 @@ message RemoteStartScan {}
 message RemoteStopScan {}
 message RemoteConnect {}
 message RemoteDisconnect {}
-message RemoteError {}
+message RemoteError { bool value = 1; RemoteMessage message = 2; }
 message RemoteVoiceBegin {}
 message RemoteVoicePayload {}
 message RemoteVoiceEnd {}
@@ -55,7 +55,7 @@ message RemoteDeviceInfo {
   string app_version = 6;
 }
 message RemoteSetActive { int32 active = 1; }
-message RemotePingRequest { int32 val1 = 1; }
+message RemotePingRequest { int32 val1 = 1; int32 val2 = 2; }
 message RemotePingResponse { int32 val1 = 1; }
 
 message RemoteTextFieldStatus {
