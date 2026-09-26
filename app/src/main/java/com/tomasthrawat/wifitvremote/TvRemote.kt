@@ -199,26 +199,14 @@ class TvRemote(
                         }
 
                         message.hasRemoteStart() -> {
-                            val shouldBecomeReady = synchronized(lock) {
-                                generation == thisGeneration &&
-                                    sessionSequence == thisSession &&
-                                    !explicitlyStopped &&
-                                    activeSent &&
-                                    !handshakeReady
-                            }
-                            if (shouldBecomeReady &&
-                                markHandshakeReady(thisGeneration, thisSession)
-                            ) {
-                                reconnectAttempt = 0
-                                postReady(thisGeneration, thisSession)
-                            }
+                            // Informational only; RemoteSetActive marks handshake readiness.
                         }
 
                         message.hasRemotePingRequest() -> {
                             val pingPayload =
                                 RemoteMessage.newBuilder().setRemotePingResponse(
                                     RemotePingResponse.newBuilder()
-                                        .setVal1(message.remotePingRequest.val1)
+                                        .setVal1(1)
                                 ).build().toByteArray()
                             send(thisGeneration, thisSession, pingPayload)
                         }
@@ -290,12 +278,18 @@ class TvRemote(
                         }
 
                         message.hasRemoteError() -> {
+                            val remoteError = message.remoteError
+                            val detail = buildString {
+                                append("TV returned a remote protocol error (value=")
+                                append(remoteError.value)
+                                if (remoteError.hasMessage()) {
+                                    append(", message=")
+                                    append(remoteError.message.toString())
+                                }
+                                append(")")
+                            }
                             postForSession(thisGeneration, thisSession) {
-                                onError(
-                                    IllegalStateException(
-                                        "TV returned a remote protocol error"
-                                    )
-                                )
+                                onError(IllegalStateException(detail))
                             }
                         }
                     }
