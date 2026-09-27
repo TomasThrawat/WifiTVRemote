@@ -60,15 +60,15 @@ private const val DESIGN_HEIGHT = 619f
 
 @Composable
 private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF121212) else Color(0xFFF5F5F5)
+    if (isSystemInDarkTheme()) Color.Black else Color(0xFFF7F6FA)
 
 @Composable
 private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color(0xFFFFFFFF)
+    if (isSystemInDarkTheme()) Color(0xFF222222) else Color.White
 
 @Composable
 private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color(0xFFFFFFFF)
+    if (isSystemInDarkTheme()) Color(0xFF222222) else Color.White
 
 @Composable
 private fun remoteText(): Color =
@@ -76,7 +76,7 @@ private fun remoteText(): Color =
 
 @Composable
 private fun remoteMuted(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF9B9B9B) else Color(0xFF77777B)
+    if (isSystemInDarkTheme()) Color(0xFF9B9B9B) else Color(0xFF66666C)
 
 @Composable
 private fun remoteBorder(): Color =
@@ -211,76 +211,24 @@ private fun ReferenceRemoteLayout(
             .fillMaxSize()
             .background(remoteBackground())
     ) {
-        // Top row: Power, Setup, Source.
+        // Top status row: power, connection pill, speaker.
         ControlSurface(
             x = 20, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::power,
             contentDescription = "Power"
         ) {
-            ReferenceGlyph(Glyph.POWER, Color(0xFFFF0000), Modifier.size(22.dp))
+            ReferenceGlyph(Glyph.POWER, Color(0xFFFF2A6D), Modifier.size(22.dp))
         }
 
-        ControlSurface(
-            x = 127, y = 54, w = 46, h = 46,
-            radius = 23, color = remoteSurface2(),
-            onClick = onSetup,
-            contentDescription = "Setup"
-        ) {
-            ReferenceGlyph(Glyph.SETTINGS, remoteText(), Modifier.size(20.dp))
-        }
+        ReferenceStatusPill(
+            x = 72,
+            y = 54,
+            connected = status.equals("Connected", ignoreCase = true)
+        )
 
         ControlSurface(
             x = 234, y = 54, w = 46, h = 46,
-            radius = 23, color = remoteSurface2(),
-            onClick = remote::input,
-            contentDescription = "Source"
-        ) {
-            Text(
-                "SOURCE",
-                color = remoteText(),
-                fontSize = 7.5.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-
-        // Large circular navigation pad.
-        DPadReference(
-            remote = remote,
-            modifier = Modifier.offset(72.dp, 122.dp)
-        )
-
-        // Secondary controls below the D-pad.
-        ReferenceTextButton(
-            text = "EXIT",
-            x = 24, y = 291, w = 45, h = 42,
-            fill = true,
-            onClick = remote::back
-        )
-        ReferenceTextButton(
-            text = "CH-LIST",
-            x = 231, y = 291, w = 45, h = 42,
-            fill = true,
-            onClick = remote::menu
-        )
-
-        // Volume and channel rockers, with a separate Mute button between them.
-        DualRocker(
-            modifier = Modifier.offset(45.dp, 348.dp),
-            label = "VOL",
-            onUp = remote::volumeUp,
-            onDown = remote::volumeDown
-        )
-
-        DualRocker(
-            modifier = Modifier.offset(209.dp, 348.dp),
-            label = "CH",
-            onUp = remote::channelUp,
-            onDown = remote::channelDown
-        )
-
-        ControlSurface(
-            x = 127, y = 366, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::mute,
             contentDescription = "Mute"
@@ -288,9 +236,74 @@ private fun ReferenceRemoteLayout(
             ReferenceGlyph(Glyph.SPEAKER, remoteText(), Modifier.size(20.dp))
         }
 
-        // Navigation row.
+        // Setup and source sit on the second row, beside the navigation pad.
+        ControlSurface(
+            x = 20, y = 116, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = onSetup,
+            contentDescription = "Setup"
+        ) {
+            Text("SETUP", color = remoteText(), fontSize = 7.sp, fontWeight = FontWeight.Medium)
+        }
+
+        ControlSurface(
+            x = 234, y = 116, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = remote::input,
+            contentDescription = "Source"
+        ) {
+            Text("SOURCE", color = remoteText(), fontSize = 7.sp, fontWeight = FontWeight.Medium)
+        }
+
+        DPadReference(
+            remote = remote,
+            modifier = Modifier.offset(72.dp, 136.dp)
+        )
+
+        // Side buttons align with the lower half of the D-pad.
+        ReferenceTextButton(
+            text = "EXIT",
+            x = 20, y = 249, w = 46, h = 42,
+            fill = true,
+            onClick = remote::back
+        )
+        ReferenceTextButton(
+            text = "CH-LIST",
+            x = 234, y = 249, w = 46, h = 42,
+            fill = true,
+            onClick = remote::menu
+        )
+
+        // Small reference-mode strip.
+        ReferenceModeStrip(
+            x = 94,
+            y = 315,
+            onFirst = remote::input,
+            onSecond = remote::mute,
+            onNumbers = { numberPadOpen = true }
+        )
+
+        DualRocker(
+            modifier = Modifier.offset(43.dp, 361.dp),
+            label = "VOL",
+            onUp = remote::volumeUp,
+            onDown = remote::volumeDown,
+            upIcon = "+",
+            downIcon = "−"
+        )
+
+        DualRocker(
+            modifier = Modifier.offset(211.dp, 361.dp),
+            label = "CH",
+            onUp = remote::channelUp,
+            onDown = remote::channelDown,
+            upIcon = "⌃",
+            downIcon = "⌄"
+        )
+
+        // Center navigation: Home, Play/Pause, then a wide Back pill.
         CompactNavControl(
-            x = 91, y = 454,
+            x = 103, y = 360,
             contentDescription = "Home",
             onClick = remote::home
         ) {
@@ -298,51 +311,146 @@ private fun ReferenceRemoteLayout(
         }
 
         CompactNavControl(
-            x = 132, y = 454,
-            contentDescription = "Back",
-            onClick = remote::back
-        ) {
-            ReferenceGlyph(Glyph.BACK, remoteText(), Modifier.size(18.dp))
-        }
-
-        CompactNavControl(
-            x = 173, y = 454,
+            x = 159, y = 360,
             contentDescription = "Play/Pause",
             onClick = remote::playPause
         ) {
             ReferenceGlyph(Glyph.PLAY_PAUSE, remoteText(), Modifier.size(18.dp))
         }
 
-        // Four streaming shortcuts from the reference image.
+        WideControl(
+            x = 100, y = 414,
+            label = "BACK",
+            onClick = remote::back
+        )
+
+        ReferencePageIndicator(y = 478.dp)
+
+        // Three streaming shortcuts, centered like the reference.
         StreamReferenceButton(
-            x = 9, y = 503,
+            x = 24, y = 503,
             text = "YouTube",
             textColor = Color(0xFFFF3333),
             onClick = { remote.launchAppLink("https://www.youtube.com/") }
         )
         StreamReferenceButton(
-            x = 80, y = 503,
+            x = 115, y = 503,
             text = "NETFLIX",
             textColor = Color(0xFFE50914),
             onClick = { remote.launchAppLink("https://www.netflix.com/") }
         )
         StreamReferenceButton(
-            x = 151, y = 503,
+            x = 206, y = 503,
             text = "prime video",
             textColor = remoteText(),
             onClick = { remote.launchAppLink("https://www.primevideo.com/") }
-        )
-        StreamReferenceButton(
-            x = 222, y = 503,
-            text = "Disney+",
-            textColor = Color(0xFF6B63D9),
-            onClick = { remote.launchAppLink("https://www.disneyplus.com/") }
         )
 
         if (numberPadOpen) {
             NumberPadOverlay(
                 remote = remote,
                 onClose = { numberPadOpen = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReferenceStatusPill(
+    x: Int,
+    y: Int,
+    connected: Boolean
+) {
+    Row(
+        modifier = Modifier
+            .offset(x.dp, y.dp)
+            .size(162.dp, 46.dp)
+            .clip(RoundedCornerShape(23.dp))
+            .background(remoteSurface2())
+            .border(1.dp, remoteBorder(), RoundedCornerShape(23.dp))
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Box(
+            Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(if (connected) Color(0xFF4CD964) else remoteMuted())
+        )
+        Text(
+            "Samsung Smart TV",
+            modifier = Modifier.padding(start = 6.dp),
+            color = remoteText(),
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun ReferenceModeStrip(
+    x: Int,
+    y: Int,
+    onFirst: () -> Unit,
+    onSecond: () -> Unit,
+    onNumbers: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .offset(x.dp, y.dp)
+            .size(112.dp, 31.dp),
+        color = remoteSurface2(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, remoteBorder())
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            listOf(
+                Triple("◌", "Input mode", onFirst),
+                Triple("⌕", "Mute", onSecond),
+                Triple("123", "Number pad", onNumbers)
+            ).forEach { (label, description, action) ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize()
+                        .clickable(onClick = action)
+                        .semantics { contentDescription = description },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        color = remoteText(),
+                        fontSize = if (label == "123") 8.sp else 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReferencePageIndicator(y: androidx.compose.ui.unit.Dp) {
+    Row(
+        modifier = Modifier
+            .offset(140.dp, y)
+            .width(20.dp)
+            .height(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { index ->
+            Box(
+                Modifier
+                    .size(if (index == 0) 5.dp else 4.dp)
+                    .clip(CircleShape)
+                    .background(if (index == 0) remoteText() else remoteMuted())
             )
         }
     }
@@ -804,7 +912,9 @@ private fun DualRocker(
     modifier: Modifier,
     label: String,
     onUp: () -> Unit,
-    onDown: () -> Unit
+    onDown: () -> Unit,
+    upIcon: String = "+",
+    downIcon: String = "−"
 ) {
     Surface(
         modifier = modifier.size(46.dp, 101.dp),
@@ -820,7 +930,7 @@ private fun DualRocker(
             RockerAction(
                 contentDescription = "$label up",
                 onClick = onUp,
-                icon = "+"
+                icon = upIcon
             )
             Text(
                 label,
@@ -831,7 +941,7 @@ private fun DualRocker(
             RockerAction(
                 contentDescription = "$label down",
                 onClick = onDown,
-                icon = "−"
+                icon = downIcon
             )
         }
     }
@@ -1028,7 +1138,7 @@ private fun StreamReferenceButton(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-            .size(63.dp, 32.dp)
+            .size(70.dp, 32.dp)
             .semantics { contentDescription = text.removePrefix("â¶ ").trim() },
         color = remoteSurface2(),
         shape = RoundedCornerShape(20.dp),
@@ -1078,69 +1188,61 @@ private fun ReferenceBottomNav(
     onDestination: (Destination) -> Unit
 ) {
     val items = listOf(
-        Triple(Destination.REMOTE, "â", "Remote"),
-        Triple(Destination.APPS, "â¦", "Apps"),
-        Triple(Destination.CAST, "â", "Cast"),
-        Triple(Destination.SETTINGS, "â", "Settings")
+        Triple(Destination.REMOTE, "Remote", Glyph.REMOTE),
+        Triple(Destination.APPS, "Apps", Glyph.APPS),
+        Triple(Destination.CAST, "Cast", Glyph.CAST),
+        Triple(Destination.SETTINGS, "Settings", Glyph.SETTINGS)
     )
+    val selectedTint = Color(0xFF198BFF)
+
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Row(
+        Surface(
             modifier = Modifier
-                .offset(16.dp, 543.dp)
-                .size(269.dp, 76.dp)
-                .background(remoteBackground()),
-        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.Top
-    ) {
-        items.forEach { (item, icon, label) ->
-            Column(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(76.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .clickable { onDestination(item) }
-                    .semantics { contentDescription = label },
-                horizontalAlignment = Alignment.CenterHorizontally
+                .offset(30.dp, 560.dp)
+                .size(240.dp, 48.dp),
+            color = remoteSurface2(),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, remoteBorder())
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    Modifier
-                        .padding(top = 7.dp)
-                        .size(23.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val tint = if (destination == item.name) remoteText() else remoteMuted()
-                    ReferenceGlyph(
-                        kind = when (item) {
-                            Destination.REMOTE -> Glyph.REMOTE
-                            Destination.APPS -> Glyph.APPS
-                            Destination.CAST -> Glyph.CAST
-                            Destination.SETTINGS -> Glyph.SETTINGS
-                        },
-                        tint = tint,
-                        modifier = Modifier.size(22.dp)
-                    )
+                items.forEach { (item, label, glyph) ->
+                    val selected = destination == item.name
+                    Column(
+                        modifier = Modifier
+                            .width(54.dp)
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                if (selected) {
+                                    if (isSystemInDarkTheme()) Color(0xFF14324A) else Color(0xFFE1F0FF)
+                                } else {
+                                    Color.Transparent
+                                }
+                            )
+                            .clickable { onDestination(item) }
+                            .semantics { contentDescription = label },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        ReferenceGlyph(
+                            kind = glyph,
+                            tint = if (selected) selectedTint else remoteText(),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            label,
+                            color = if (selected) selectedTint else remoteText(),
+                            fontSize = 6.5.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
                 }
-                if (destination == item.name) {
-                    Box(
-                        Modifier
-                            .padding(top = 1.dp)
-                            .width(18.dp)
-                            .height(2.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(remoteText())
-                    )
-                } else {
-                    Box(Modifier.height(2.dp))
-                }
-                Text(
-                    label,
-                    color = if (destination == item.name) remoteText() else remoteMuted(),
-                    fontSize = 7.sp,
-                    fontWeight = if (destination == item.name) FontWeight.SemiBold else FontWeight.Normal
-                )
             }
         }
-    }
     }
 }
 
