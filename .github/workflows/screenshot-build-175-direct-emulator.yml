@@ -9,7 +9,7 @@ permissions:
 jobs:
   screenshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
 
     steps:
       - name: Capture Build 175 on direct emulator
@@ -19,12 +19,10 @@ jobs:
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
           test -d "$SDK_ROOT"
 
-          echo "Installed Android system images:"
-          find "$SDK_ROOT/system-images" -maxdepth 3 -type d -name "x86_64" 2>/dev/null | sort -V || true
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platform-tools" "emulator" "system-images;android-30;default;x86_64"
 
-          SYSTEM_IMAGE="$(find "$SDK_ROOT/system-images" -maxdepth 3 -type d -name "x86_64" 2>/dev/null | sort -V | tail -n 1)"
-          test -n "$SYSTEM_IMAGE"
-          IMAGE_ID="system-images;$(echo "$SYSTEM_IMAGE" | sed "s#^$SDK_ROOT/system-images/##" | tr "/" ";")"
+          IMAGE_ID="system-images;android-30;default;x86_64"
           echo "Using $IMAGE_ID"
 
           echo "no" | avdmanager create avd --force --name build175 --package "$IMAGE_ID" --device "pixel_2"
@@ -39,14 +37,20 @@ jobs:
             >/tmp/build175-emulator.log 2>&1 &
 
           adb start-server
-          for i in $(seq 1 120); do
+          booted=false
+          for i in $(seq 1 180); do
             if adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" | grep -q "^1$"; then
+              booted=true
               break
             fi
             sleep 2
           done
 
-          test "$(adb shell getprop sys.boot_completed | tr -d "\r")" = "1"
+          if [ "$booted" != "true" ]; then
+            cat /tmp/build175-emulator.log || true
+            exit 1
+          fi
+
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
