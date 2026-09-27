@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,16 +23,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,12 +39,9 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardOptions
 
-private val AppBlue = Color(0xFF1D6EFF)
 private const val DESIGN_WIDTH = 300f
 private const val DESIGN_HEIGHT = 595f
 
@@ -164,17 +155,10 @@ internal fun RemoteScreen(
                     status = status,
                     onSetup = { destination = Destination.SETTINGS.name }
                 )
-                Destination.APPS.name -> ReferencePage {
-                    AppsPage(remote)
-                }
-                Destination.CAST.name -> ReferencePage {
-                    CastPage()
-                }
-                Destination.SETTINGS.name -> ReferencePage {
-                    SettingsPage(status, onDisconnect)
-                }
+                Destination.APPS.name -> ReferencePage { AppsPage(remote) }
+                Destination.CAST.name -> ReferencePage { CastPage() }
+                Destination.SETTINGS.name -> ReferencePage { SettingsPage(status, onDisconnect) }
             }
-
             ReferenceBottomNav(
                 destination = destination,
                 onDestination = { destination = it.name }
@@ -194,21 +178,19 @@ private fun ReferenceRemoteLayout(
             .fillMaxSize()
             .background(remoteBackground())
     ) {
-        // Header: exact reference-space geometry, 300 x 595 design units.
         ControlSurface(
             x = 23, y = 30, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::power
         ) {
-            Text("⏻", color = remoteText(), fontSize = 18.sp, textAlign = TextAlign.Center)
+            Text("⏻", color = remoteText(), fontSize = 18.sp)
         }
 
         Column(
             modifier = Modifier
                 .offset(75.dp, 29.dp)
                 .size(150.dp, 46.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Samsung Smart TV",
@@ -223,7 +205,10 @@ private fun ReferenceRemoteLayout(
                     .padding(top = 1.dp)
                     .size(5.dp)
                     .clip(CircleShape)
-                    .background(if (status == "متصل" || status == "Connected") Color(0xFF4ED17B) else remoteMuted())
+                    .background(
+                        if (status == "متصل" || status == "Connected") Color(0xFF4ED17B)
+                        else remoteMuted()
+                    )
             )
         }
 
@@ -235,31 +220,13 @@ private fun ReferenceRemoteLayout(
             Text("⌁", color = remoteText(), fontSize = 18.sp)
         }
 
-        ReferenceTextButton(
-            text = "SETUP",
-            x = 22, y = 101, w = 52, h = 24,
-            onClick = onSetup
-        )
-        ReferenceTextButton(
-            text = "SOURCE",
-            x = 224, y = 101, w = 54, h = 24,
-            onClick = remote::input
-        )
+        ReferenceTextButton("SETUP", 22, 101, 52, 24, onSetup)
+        ReferenceTextButton("SOURCE", 224, 101, 54, 24, onClick = remote::input)
 
         DPadReference(remote, Modifier.offset(72.dp, 109.dp))
 
-        ReferenceTextButton(
-            text = "EXIT",
-            x = 23, y = 239, w = 46, h = 46,
-            fill = true,
-            onClick = remote::back
-        )
-        ReferenceTextButton(
-            text = "CH-LIST",
-            x = 230, y = 239, w = 47, h = 46,
-            fill = true,
-            onClick = remote::menu
-        )
+        ReferenceTextButton("EXIT", 23, 239, 46, 46, true, remote::back)
+        ReferenceTextButton("CH-LIST", 230, 239, 47, 46, true, remote::menu)
 
         Row(
             modifier = Modifier
@@ -295,38 +262,31 @@ private fun ReferenceRemoteLayout(
             onBottom = remote::channelDown
         )
 
-        MiniControl(
-            x = 100, y = 327, label = "≡", onClick = remote::menu
-        )
-        MiniControl(
-            x = 154, y = 327, label = "i", onClick = remote::input
-        )
-        WideControl(
-            x = 100, y = 382, label = "MUTE", onClick = remote::mute
-        )
+        MiniControl(100, 327, "≡", remote::menu)
+        MiniControl(154, 327, "i", remote::input)
+        WideControl(100, 382, "MUTE", remote::mute)
 
-        Row(
-            modifier = Modifier
-                .offset(30.dp, 465.dp)
-                .size(244.dp, 40.dp),
-            horizontalArrangement = Arrangement.spacedBy(9.dp)
-        ) {
-            StreamReferenceButton(
-                text = "▶ YouTube",
-                textColor = Color(0xFFFF3333),
-                onClick = { remote.launchAppLink("https://www.youtube.com/") }
-            )
-            StreamReferenceButton(
-                text = "NETFLIX",
-                textColor = Color(0xFFE50914),
-                onClick = { remote.launchAppLink("https://www.netflix.com/") }
-            )
-            StreamReferenceButton(
-                text = "prime video",
-                textColor = remoteText(),
-                onClick = { remote.launchAppLink("https://www.primevideo.com/") }
-            )
-        }
+        StreamReferenceButton(
+            x = 30,
+            y = 465,
+            text = "▶ YouTube",
+            textColor = Color(0xFFFF3333),
+            onClick = { remote.launchAppLink("https://www.youtube.com/") }
+        )
+        StreamReferenceButton(
+            x = 113,
+            y = 465,
+            text = "NETFLIX",
+            textColor = Color(0xFFE50914),
+            onClick = { remote.launchAppLink("https://www.netflix.com/") }
+        )
+        StreamReferenceButton(
+            x = 196,
+            y = 465,
+            text = "prime video",
+            textColor = remoteText(),
+            onClick = { remote.launchAppLink("https://www.primevideo.com/") }
+        )
     }
 }
 
@@ -492,8 +452,7 @@ private fun RockerGlyph(text: String, onClick: () -> Unit) {
 @Composable
 private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
-        x = x, y = y, w = 46, h = 46, radius = 10,
-        color = remoteSurface2(), onClick = onClick
+        x, y, 46, 46, 10, remoteSurface2(), onClick
     ) {
         Text(label, color = remoteText(), fontSize = 13.sp)
     }
@@ -502,8 +461,7 @@ private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
 @Composable
 private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
-        x = x, y = y, w = 101, h = 46, radius = 10,
-        color = remoteSurface2(), onClick = onClick
+        x, y, 101, 46, 10, remoteSurface2(), onClick
     ) {
         Text(label, color = remoteMuted(), fontSize = 8.sp, fontWeight = FontWeight.Medium)
     }
@@ -511,12 +469,16 @@ private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
 
 @Composable
 private fun StreamReferenceButton(
+    x: Int,
+    y: Int,
     text: String,
     textColor: Color,
     onClick: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.weight(1f),
+        modifier = Modifier
+            .offset(x.dp, y.dp)
+            .size(74.dp, 40.dp),
         color = remoteSurface2(),
         shape = RoundedCornerShape(9.dp),
         onClick = onClick
@@ -559,8 +521,7 @@ private fun ReferenceBottomNav(
                     .height(76.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .clickable { onDestination(item) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
                     Modifier
@@ -614,11 +575,7 @@ private fun AppsPage(remote: RemoteUiActions) {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Apps", color = remoteText(), fontSize = 23.sp, fontWeight = FontWeight.Bold)
-        Text(
-            "Launch supported TV app links.",
-            color = remoteMuted(),
-            fontSize = 10.sp
-        )
+        Text("Launch supported TV app links.", color = remoteMuted(), fontSize = 10.sp)
         listOf(
             "YouTube" to "https://www.youtube.com/",
             "Prime Video" to "https://www.primevideo.com/",
@@ -626,7 +583,9 @@ private fun AppsPage(remote: RemoteUiActions) {
         ).forEach { (name, link) ->
             Button(
                 onClick = { remote.launchAppLink(link) },
-                modifier = Modifier.fillMaxWidth().height(42.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(42.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = remoteSurface(),
@@ -646,11 +605,7 @@ private fun CastPage() {
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Cast", color = remoteText(), fontSize = 23.sp, fontWeight = FontWeight.Bold)
-        Text(
-            "Cast control surface.",
-            color = remoteMuted(),
-            fontSize = 10.sp
-        )
+        Text("Cast control surface.", color = remoteMuted(), fontSize = 10.sp)
     }
 }
 
@@ -671,12 +626,18 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                Text(status, color = if (status == "متصل") Color(0xFF4ED17B) else remoteMuted(), fontSize = 10.sp)
+                Text(
+                    status,
+                    color = if (status == "متصل") Color(0xFF4ED17B) else remoteMuted(),
+                    fontSize = 10.sp
+                )
             }
         }
         OutlinedButton(
             onClick = onDisconnect,
-            modifier = Modifier.fillMaxWidth().height(42.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(42.dp),
             border = BorderStroke(1.dp, remoteBorder()),
             shape = RoundedCornerShape(12.dp)
         ) {
