@@ -168,22 +168,24 @@ internal fun RemoteScreen(
                     transformOrigin = TransformOrigin(0.5f, 0f)
                 }
         ) {
-            CompositionLocalProvider(LocalLayoutDirection provides RemoteUiSpec.coordinateLayoutDirection) {
-                when (destination) {
-                    Destination.REMOTE.name -> ReferenceRemoteLayout(
+            when (destination) {
+                Destination.REMOTE.name -> CompositionLocalProvider(
+                    LocalLayoutDirection provides RemoteUiSpec.coordinateLayoutDirection
+                ) {
+                    ReferenceRemoteLayout(
                         remote = remote,
                         status = status,
                         onSetup = { destination = Destination.SETTINGS.name }
                     )
-                    Destination.APPS.name -> ReferencePage { AppsPage(remote) }
-                    Destination.CAST.name -> ReferencePage { CastPage() }
-                    Destination.SETTINGS.name -> ReferencePage { SettingsPage(status, onDisconnect) }
                 }
-                ReferenceBottomNav(
-                    destination = destination,
-                    onDestination = { destination = it.name }
-                )
+                Destination.APPS.name -> ReferencePage { AppsPage(remote) }
+                Destination.CAST.name -> ReferencePage { CastPage() }
+                Destination.SETTINGS.name -> ReferencePage { SettingsPage(status, onDisconnect) }
             }
+            ReferenceBottomNav(
+                destination = destination,
+                onDestination = { destination = it.name }
+            )
         }
     }
 }
@@ -289,13 +291,6 @@ private fun ReferenceRemoteLayout(
         MiniControl(RemoteUiSpec.playX, 351, "PLAY", remote::ok)
         WideControl(100, 406, "BACK", remote::back)
 
-        if (numberPadOpen) {
-            NumberPadOverlay(
-                remote = remote,
-                onClose = { numberPadOpen = false }
-            )
-        }
-
         StreamReferenceButton(
             x = 30,
             y = 489,
@@ -317,6 +312,13 @@ private fun ReferenceRemoteLayout(
             textColor = remoteText(),
             onClick = { remote.launchAppLink("https://www.primevideo.com/") }
         )
+
+        if (numberPadOpen) {
+            NumberPadOverlay(
+                remote = remote,
+                onClose = { numberPadOpen = false }
+            )
+        }
     }
 }
 
@@ -620,67 +622,77 @@ private fun NumberPadOverlay(
     remote: RemoteUiActions,
     onClose: () -> Unit
 ) {
-    Surface(
+    Box(
         modifier = Modifier
-            .offset(55.dp, 275.dp)
-            .size(190.dp, 250.dp),
-        color = remoteSurface(),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, remoteBorder())
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.32f))
+            .clickable(onClick = onClose)
+            .semantics { contentDescription = "Numeric keypad" }
     ) {
-        Column(
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .offset(55.dp, 275.dp)
+                .size(190.dp, 250.dp)
+                .clickable(onClick = { })
+                .semantics { contentDescription = "Numeric keypad panel" },
+            color = remoteSurface(),
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, remoteBorder())
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    "Numeric keypad",
-                    color = remoteText(),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(CircleShape)
-                        .clickable(onClick = onClose)
-                        .semantics { contentDescription = "Close numeric keypad" },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("×", color = remoteText(), fontSize = 17.sp)
-                }
-            }
-
-            val rows = listOf(
-                listOf("1", "2", "3"),
-                listOf("4", "5", "6"),
-                listOf("7", "8", "9"),
-                listOf("*", "0", "#")
-            )
-
-            rows.forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    row.forEach { key ->
-                        NumberPadKey(
-                            text = key,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                when (key) {
-                                    "*" -> remote.star()
-                                    "#" -> remote.pound()
-                                    else -> remote.number(key.toInt())
+                    Text(
+                        "Numeric keypad",
+                        color = remoteText(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable(onClick = onClose)
+                            .semantics { contentDescription = "Close numeric keypad" },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("×", color = remoteText(), fontSize = 17.sp)
+                    }
+                }
+
+                val rows = listOf(
+                    listOf("1", "2", "3"),
+                    listOf("4", "5", "6"),
+                    listOf("7", "8", "9"),
+                    listOf("*", "0", "#")
+                )
+
+                rows.forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        row.forEach { key ->
+                            NumberPadKey(
+                                text = key,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    when (key) {
+                                        "*" -> remote.star()
+                                        "#" -> remote.pound()
+                                        else -> remote.number(key.toInt())
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }
@@ -699,7 +711,7 @@ private fun NumberPadKey(
 
     Box(
         modifier = modifier
-            .height(39.dp)
+            .height(44.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(if (pressed) remotePressedSurface() else remoteSurface2())
             .border(1.dp, remoteBorder(), RoundedCornerShape(10.dp))
@@ -757,54 +769,77 @@ private fun VerticalRocker(
             .background(remoteSurface2())
             .border(1.dp, remoteBorder(), RoundedCornerShape(23.dp))
     ) {
-        RockerGlyph(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = 1.dp),
-            text = top,
-            contentDescription = (if (label == "VOL") "Volume" else "Channel") + " up",
-            onClick = onTop
-        )
-        RockerGlyph(
-            modifier = Modifier.align(Alignment.Center),
-            text = middle,
-            contentDescription = if (label == "VOL") "Mute" else "Channel menu",
-            onClick = onMiddle
-        )
-        RockerGlyph(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = (-11).dp),
-            text = bottom,
-            contentDescription = (if (label == "VOL") "Volume" else "Channel") + " down",
-            onClick = onBottom
-        )
-        Text(
-            label,
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 2.dp),
-            color = remoteMuted(),
-            textAlign = TextAlign.Center,
-            fontSize = 7.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+                .align(Alignment.TopCenter)
+                .padding(top = 1.dp)
+        ) {
+            RockerGlyph(
+                text = top,
+                contentDescription = (if (label == "VOL") "Volume" else "Channel") + " up",
+                onClick = onTop
+            )
+            RockerGlyph(
+                text = middle,
+                contentDescription = if (label == "VOL") "Mute" else "Channel menu",
+                onClick = onMiddle
+            )
+            RockerBottomGlyph(
+                text = bottom,
+                label = label,
+                contentDescription = (if (label == "VOL") "Volume" else "Channel") + " down",
+                onClick = onBottom
+            )
+        }
     }
 }
 
 @Composable
 private fun RockerGlyph(
-    modifier: Modifier,
     text: String,
     contentDescription: String,
     onClick: () -> Unit
+) {
+    RockerSegmentContainer(contentDescription, onClick) {
+        Text(text, color = remoteText(), fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun RockerBottomGlyph(
+    text: String,
+    label: String,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    RockerSegmentContainer(contentDescription, onClick) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text, color = remoteText(), fontSize = 13.sp)
+            Text(
+                label,
+                color = remoteMuted(),
+                fontSize = 7.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun RockerSegmentContainer(
+    contentDescription: String,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(RemoteUiSpec.rockerSegmentHeightDp.dp)
             .clip(RoundedCornerShape(14.dp))
@@ -817,7 +852,7 @@ private fun RockerGlyph(
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = remoteText(), fontSize = 13.sp)
+        content()
     }
 }
 
@@ -918,11 +953,12 @@ private fun ReferenceBottomNav(
         Triple(Destination.CAST, "◒", "Cast"),
         Triple(Destination.SETTINGS, "⚙", "Settings")
     )
-    Row(
-        modifier = Modifier
-             .offset(16.dp, 543.dp)
-            .size(269.dp, 76.dp)
-            .background(remoteBackground()),
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = Modifier
+                .offset(16.dp, 543.dp)
+                .size(269.dp, 76.dp)
+                .background(remoteBackground()),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.Top
     ) {
@@ -973,6 +1009,7 @@ private fun ReferenceBottomNav(
                 )
             }
         }
+    }
     }
 }
 
