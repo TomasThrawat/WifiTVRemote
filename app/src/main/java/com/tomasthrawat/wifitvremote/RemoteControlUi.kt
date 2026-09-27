@@ -142,7 +142,10 @@ internal fun RemoteScreen(
             .background(remoteBackground()),
         contentAlignment = Alignment.TopCenter
     ) {
-        val scale = maxWidth.value / DESIGN_WIDTH
+        val scale = minOf(
+            maxWidth.value / DESIGN_WIDTH,
+            maxHeight.value / DESIGN_HEIGHT
+        )
         Box(
             modifier = Modifier
                 .width(DESIGN_WIDTH.dp)
