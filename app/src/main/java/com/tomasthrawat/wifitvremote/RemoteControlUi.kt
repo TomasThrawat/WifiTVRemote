@@ -60,19 +60,19 @@ private const val DESIGN_HEIGHT = 619f
 
 @Composable
 private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFE7EAF2)
+    if (isSystemInDarkTheme()) Color(0xFF121212) else Color(0xFFF5F5F5)
 
 @Composable
 private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF181818) else Color(0xFFF5F5F5)
+    if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color(0xFFFFFFFF)
 
 @Composable
 private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF141414) else Color(0xFFFFFEFF)
+    if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color(0xFFFFFFFF)
 
 @Composable
 private fun remoteText(): Color =
-    if (isSystemInDarkTheme()) Color(0xFFF4F4F4) else Color(0xFF151515)
+    if (isSystemInDarkTheme()) Color(0xFFFFFFFF) else Color(0xFF333333)
 
 @Composable
 private fun remoteMuted(): Color =
@@ -216,14 +216,14 @@ private fun ReferenceRemoteLayout(
             onClick = remote::power,
             contentDescription = "Power"
         ) {
-            ReferenceGlyph(Glyph.POWER, remoteText(), Modifier.size(22.dp))
+            ReferenceGlyph(Glyph.POWER, Color(0xFFFF0000), Modifier.size(22.dp))
         }
 
         Surface(
             modifier = Modifier
                 .offset(75.dp, 55.dp)
                 .size(150.dp, 38.dp),
-            color = if (isSystemInDarkTheme()) Color(0xFF191919) else Color.White,
+            color = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color.White,
             shape = RoundedCornerShape(19.dp)
         ) {
             Row(
@@ -236,7 +236,7 @@ private fun ReferenceRemoteLayout(
                         .size(5.dp)
                         .clip(CircleShape)
                         .background(
-                            if (status == "متصل" || status == "Connected") Color(0xFF4ED17B)
+                            if (status == "ÙØªØµÙ" || status == "Connected") Color(0xFF4ED17B)
                             else remoteMuted()
                         )
                 )
@@ -278,8 +278,8 @@ private fun ReferenceRemoteLayout(
             modifier = Modifier.offset(45.dp, 351.dp),
             label = "VOL",
             top = "+",
-            middle = "●",
-            bottom = "−",
+            middle = "â",
+            bottom = "â",
             onTop = remote::volumeUp,
             onMiddle = remote::mute,
             onBottom = remote::volumeDown
@@ -289,8 +289,8 @@ private fun ReferenceRemoteLayout(
             modifier = Modifier.offset(209.dp, 351.dp),
             label = "CH",
             top = "+",
-            middle = "•",
-            bottom = "−",
+            middle = "â¢",
+            bottom = "â",
             onTop = remote::channelUp,
             onMiddle = remote::menu,
             onBottom = remote::channelDown
@@ -303,7 +303,7 @@ private fun ReferenceRemoteLayout(
         StreamReferenceButton(
             x = 30,
             y = 489,
-            text = "▶ YouTube",
+            text = "â¶ YouTube",
             textColor = Color(0xFFFF3333),
             onClick = { remote.launchAppLink("https://www.youtube.com/") }
         )
@@ -398,18 +398,18 @@ private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
         modifier
             .size(156.dp)
             .clip(CircleShape)
-            .background(if (isSystemInDarkTheme()) Color(0xFF171717) else Color(0xFFF5F5F5))
+            .background(if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color.White)
             .border(1.dp, remoteBorder(), CircleShape)
     ) {
-        DPadKeyReference(Modifier.offset(55.dp, 7.dp), "▲", remote::up)
-        DPadKeyReference(Modifier.offset(7.dp, 55.dp), "◀", remote::left)
-        DPadKeyReference(Modifier.offset(109.dp, 55.dp), "▶", remote::right)
-        DPadKeyReference(Modifier.offset(55.dp, 109.dp), "▼", remote::down)
+        DPadKeyReference(Modifier.offset(55.dp, 7.dp), "â²", remote::up)
+        DPadKeyReference(Modifier.offset(7.dp, 55.dp), "â", remote::left)
+        DPadKeyReference(Modifier.offset(109.dp, 55.dp), "â¶", remote::right)
+        DPadKeyReference(Modifier.offset(55.dp, 109.dp), "â¼", remote::down)
         Surface(
             modifier = Modifier
                 .offset(49.dp, 49.dp)
                 .size(58.dp),
-            color = if (isSystemInDarkTheme()) Color(0xFF1C1C1C) else Color(0xFFFAFAFA),
+            color = if (isSystemInDarkTheme()) Color(0xFF121212) else Color(0xFFF5F5F5),
             shape = CircleShape,
             onClick = remote::ok
         ) {
@@ -608,8 +608,8 @@ private fun QuickActionPill(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ReferenceQuickActionSegment("‹", "Back", remote::back)
-            ReferenceQuickActionSegment("⌂", "Home", remote::home)
+            ReferenceQuickActionSegment("â¹", "Back", remote::back)
+            ReferenceQuickActionSegment("â", "Home", remote::home)
             ReferenceQuickActionSegment("123", "Numeric keypad", onShowNumberPad, small = true)
         }
     }
@@ -694,7 +694,7 @@ private fun NumberPadOverlay(
                             .semantics { contentDescription = "Close numeric keypad" },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("×", color = remoteText(), fontSize = 17.sp)
+                        Text("Ã", color = remoteText(), fontSize = 17.sp)
                     }
                 }
 
@@ -931,7 +931,7 @@ private fun StreamReferenceButton(
         modifier = Modifier
             .offset(x.dp, y.dp)
             .size(74.dp, 40.dp)
-            .semantics { contentDescription = text.removePrefix("▶ ").trim() },
+            .semantics { contentDescription = text.removePrefix("â¶ ").trim() },
         color = remoteSurface2(),
         shape = RoundedCornerShape(20.dp),
         onClick = onClick
@@ -945,7 +945,7 @@ private fun StreamReferenceButton(
                             .clip(RoundedCornerShape(3.dp))
                             .background(Color(0xFFFF0000)),
                         contentAlignment = Alignment.Center
-                    ) { Text("▶", color = Color.White, fontSize = 6.sp) }
+                    ) { Text("â¶", color = Color.White, fontSize = 6.sp) }
                     Text("YouTube", modifier = Modifier.padding(start = 2.dp), color = textColor, fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
                 }
                 text == "NETFLIX" -> Text("NETFLIX", color = Color(0xFFE50914), fontSize = 8.sp, fontWeight = FontWeight.Bold)
@@ -979,10 +979,10 @@ private fun ReferenceBottomNav(
     onDestination: (Destination) -> Unit
 ) {
     val items = listOf(
-        Triple(Destination.REMOTE, "⌁", "Remote"),
-        Triple(Destination.APPS, "▦", "Apps"),
-        Triple(Destination.CAST, "◒", "Cast"),
-        Triple(Destination.SETTINGS, "⚙", "Settings")
+        Triple(Destination.REMOTE, "â", "Remote"),
+        Triple(Destination.APPS, "â¦", "Apps"),
+        Triple(Destination.CAST, "â", "Cast"),
+        Triple(Destination.SETTINGS, "â", "Settings")
     )
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
@@ -1115,7 +1115,7 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
                 Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 Text(
                     status,
-                    color = if (status == "متصل") Color(0xFF4ED17B) else remoteMuted(),
+                    color = if (status == "متصل" || status == "Connected") Color(0xFF4ED17B) else remoteMuted(),
                     fontSize = 10.sp
                 )
             }
@@ -1124,7 +1124,8 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
             onClick = onDisconnect,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(42.dp),
+                .height(42.dp)
+                .semantics { contentDescription = "Disconnect TV" },
             border = BorderStroke(1.dp, remoteBorder()),
             shape = RoundedCornerShape(12.dp)
         ) {
