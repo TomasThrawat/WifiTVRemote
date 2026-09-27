@@ -15,11 +15,11 @@ class RemoteUiSpecTest {
             RemoteUiSpec.channelControls
         )
         assertEquals(
-            listOf("Back", "Home", "Power"),
+            listOf("Back", "Home", "123"),
             RemoteUiSpec.quickActions
         )
         assertEquals(
-            listOf("Remote", "Apps", "Settings"),
+            listOf("Remote", "Apps", "Cast", "Settings"),
             RemoteUiSpec.bottomNavigation
         )
     }
