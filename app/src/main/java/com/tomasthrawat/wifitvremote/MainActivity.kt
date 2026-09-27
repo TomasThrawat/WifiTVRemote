@@ -2,6 +2,7 @@ package com.tomasthrawat.wifitvremote
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -53,31 +54,36 @@ private fun WifiTvRemoteTheme(content: @Composable () -> Unit) {
 }
 
 private class PreviewRemoteActions : RemoteUiActions {
-    override fun setTextStateListener(listener: ((Boolean) -> Unit)?) {
-        listener?.invoke(true)
+    private fun qa(action: String) {
+        if (BuildConfig.DEBUG) Log.d("WifiTVRemoteQA", "ACTION:$action")
     }
 
-    override fun sendText(text: String) = Unit
-    override fun launchAppLink(appLink: String) = Unit
-    override fun power() = Unit
-    override fun home() = Unit
-    override fun back() = Unit
-    override fun up() = Unit
-    override fun down() = Unit
-    override fun left() = Unit
-    override fun right() = Unit
-    override fun ok() = Unit
-    override fun playPause() = Unit
-    override fun volumeUp() = Unit
-    override fun volumeDown() = Unit
-    override fun mute() = Unit
-    override fun channelUp() = Unit
-    override fun channelDown() = Unit
-    override fun menu() = Unit
-    override fun input() = Unit
-    override fun number(number: Int) = Unit
-    override fun star() = Unit
-    override fun pound() = Unit
+    override fun setTextStateListener(listener: ((Boolean) -> Unit)?) {
+        listener?.invoke(true)
+        qa("setTextStateListener:true")
+    }
+
+    override fun sendText(text: String) = qa("sendText:$text")
+    override fun launchAppLink(appLink: String) = qa("launchAppLink:$appLink")
+    override fun power() = qa("power")
+    override fun home() = qa("home")
+    override fun back() = qa("back")
+    override fun up() = qa("up")
+    override fun down() = qa("down")
+    override fun left() = qa("left")
+    override fun right() = qa("right")
+    override fun ok() = qa("ok")
+    override fun playPause() = qa("playPause")
+    override fun volumeUp() = qa("volumeUp")
+    override fun volumeDown() = qa("volumeDown")
+    override fun mute() = qa("mute")
+    override fun channelUp() = qa("channelUp")
+    override fun channelDown() = qa("channelDown")
+    override fun menu() = qa("menu")
+    override fun input() = qa("input")
+    override fun number(number: Int) = qa("number:$number")
+    override fun star() = qa("star")
+    override fun pound() = qa("pound")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,8 +100,8 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         val previewRemote = remember { PreviewRemoteActions() }
         RemoteScreen(
             remote = previewRemote,
-            status = "ÙØªØµÙ",
-            onDisconnect = {}
+            status = "Connected",
+            onDisconnect = { if (BuildConfig.DEBUG) Log.d("WifiTVRemoteQA", "ACTION:disconnect") }
         )
         return
     }
@@ -110,7 +116,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     var showRemote by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var codeRequested by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("WiâFi ÙÙØ· â¢ Ø¬Ø§ÙØ² ÙÙØ¨Ø­Ø«") }
+    var status by remember { mutableStateOf("WiÃ¢ÂÂFi ÃÂÃÂÃÂ· Ã¢ÂÂ¢ ÃÂ¬ÃÂ§ÃÂÃÂ² ÃÂÃÂÃÂ¨ÃÂ­ÃÂ«") }
     var scanJob by remember { mutableStateOf<Job?>(null) }
     var scanGeneration by remember { mutableIntStateOf(0) }
     var attemptGeneration by remember { mutableIntStateOf(0) }
@@ -133,20 +139,20 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         val thisScan = scanGeneration
         scanJob = null
         devices.clear()
-        status = "Ø¬Ø§Ø±Ù Ø§ÙØ¨Ø­Ø«..."
+        status = "ÃÂ¬ÃÂ§ÃÂ±ÃÂ ÃÂ§ÃÂÃÂ¨ÃÂ­ÃÂ«..."
 
         scanJob = scope.launch {
             discovery.scan().collect { device ->
                 if (thisScan == scanGeneration && devices.none { it.host == device.host }) {
                     devices.add(device)
-                    status = "ØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ ${devices.size} Ø¬ÙØ§Ø²"
+                    status = "ÃÂªÃÂ ÃÂ§ÃÂÃÂ¹ÃÂ«ÃÂÃÂ± ÃÂ¹ÃÂÃÂ ${devices.size} ÃÂ¬ÃÂÃÂ§ÃÂ²"
                 }
             }
             if (thisScan == scanGeneration) {
                 status = if (devices.isEmpty()) {
-                    "ÙÙ ÙØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ Ø£Ø¬ÙØ²Ø©"
+                    "ÃÂÃÂ ÃÂÃÂªÃÂ ÃÂ§ÃÂÃÂ¹ÃÂ«ÃÂÃÂ± ÃÂ¹ÃÂÃÂ ÃÂ£ÃÂ¬ÃÂÃÂ²ÃÂ©"
                 } else {
-                    "ØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ ${devices.size} Ø¬ÙØ§Ø²"
+                    "ÃÂªÃÂ ÃÂ§ÃÂÃÂ¹ÃÂ«ÃÂÃÂ± ÃÂ¹ÃÂÃÂ ${devices.size} ÃÂ¬ÃÂÃÂ§ÃÂ²"
                 }
                 scanJob = null
             }
@@ -160,7 +166,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         stopCurrentConnection()
 
         val token = attemptGeneration
-        status = "Ø¬Ø§Ø±Ù Ø§ÙØ§ØªØµØ§Ù Ø¨Ù ${device.name}..."
+        status = "ÃÂ¬ÃÂ§ÃÂ±ÃÂ ÃÂ§ÃÂÃÂ§ÃÂªÃÂµÃÂ§ÃÂ ÃÂ¨ÃÂ ${device.name}..."
         code = ""
         codeRequested = false
 
@@ -171,14 +177,14 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             onCode = {
                 if (token == attemptGeneration && pairing === p) {
                     codeRequested = true
-                    status = "Ø£Ø¯Ø®Ù Ø±ÙØ² Ø§ÙØ§ÙØªØ±Ø§Ù Ø§ÙØ¸Ø§ÙØ± Ø¹ÙÙ Ø§ÙØªÙÙØ²ÙÙÙ."
+                    status = "ÃÂ£ÃÂ¯ÃÂ®ÃÂ ÃÂ±ÃÂÃÂ² ÃÂ§ÃÂÃÂ§ÃÂÃÂªÃÂ±ÃÂ§ÃÂ ÃÂ§ÃÂÃÂ¸ÃÂ§ÃÂÃÂ± ÃÂ¹ÃÂÃÂ ÃÂ§ÃÂÃÂªÃÂÃÂÃÂ²ÃÂÃÂÃÂ."
                 }
             },
             onPaired = { identity ->
                 if (token == attemptGeneration && pairing === p) {
                     pairing = null
                     p.stop()
-                    status = "ØªÙ Ø§ÙØ§ÙØªØ±Ø§Ù. Ø¬Ø§Ø±Ù Ø§ÙØ§ØªØµØ§Ù..."
+                    status = "ÃÂªÃÂ ÃÂ§ÃÂÃÂ§ÃÂÃÂªÃÂ±ÃÂ§ÃÂ. ÃÂ¬ÃÂ§ÃÂ±ÃÂ ÃÂ§ÃÂÃÂ§ÃÂªÃÂµÃÂ§ÃÂ..."
 
                     lateinit var r: TvRemote
                     r = TvRemote(
@@ -189,7 +195,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 connected = true
                                 pairing = null
                                 codeRequested = false
-                                status = "ÙØªØµÙ"
+                                status = "Connected"
                                 showRemote = true
                             }
                         },
@@ -199,7 +205,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 remote = null
                                 connected = false
                                 showRemote = false
-                                status = "Ø®Ø·Ø£: " + (error.message ?: error.javaClass.simpleName)
+                                status = "ÃÂ®ÃÂ·ÃÂ£: " + (error.message ?: error.javaClass.simpleName)
                             }
                         }
                     )
@@ -212,7 +218,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     p.stop()
                     pairing = null
                     codeRequested = false
-                    status = "Ø®Ø·Ø£: " + (error.message ?: error.javaClass.simpleName)
+                    status = "ÃÂ®ÃÂ·ÃÂ£: " + (error.message ?: error.javaClass.simpleName)
                 }
             }
         )
@@ -242,7 +248,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             status = status,
             onDisconnect = {
                 stopCurrentConnection()
-                status = "ØªÙ ÙØµÙ Ø§ÙØ§ØªØµØ§Ù"
+                status = "ÃÂªÃÂ ÃÂÃÂµÃÂ ÃÂ§ÃÂÃÂ§ÃÂªÃÂµÃÂ§ÃÂ"
             }
         )
     } else {
@@ -263,9 +269,9 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     val success = currentPairing.submitCode(submittedCode)
                     if (token == attemptGeneration && pairing === currentPairing) {
                         status = if (success) {
-                            "ØªÙ Ø¥Ø±Ø³Ø§Ù Ø§ÙØ±ÙØ². Ø§ÙØªØ¸Ø§Ø± Ø§ÙØªÙÙØ²ÙÙÙ..."
+                            "ÃÂªÃÂ ÃÂ¥ÃÂ±ÃÂ³ÃÂ§ÃÂ ÃÂ§ÃÂÃÂ±ÃÂÃÂ². ÃÂ§ÃÂÃÂªÃÂ¸ÃÂ§ÃÂ± ÃÂ§ÃÂÃÂªÃÂÃÂÃÂ²ÃÂÃÂÃÂ..."
                         } else {
-                            "ØªØ¹Ø°Ø± Ø¥Ø±Ø³Ø§Ù Ø§ÙØ±ÙØ². ØªØ£ÙØ¯ ÙÙ Ø¥Ø¯Ø®Ø§Ù Ø§ÙØ±ÙØ² Ø§ÙØ³Ø¯Ø§Ø³Ù Ø§ÙØµØ­ÙØ­."
+                            "ÃÂªÃÂ¹ÃÂ°ÃÂ± ÃÂ¥ÃÂ±ÃÂ³ÃÂ§ÃÂ ÃÂ§ÃÂÃÂ±ÃÂÃÂ². ÃÂªÃÂ£ÃÂÃÂ¯ ÃÂÃÂ ÃÂ¥ÃÂ¯ÃÂ®ÃÂ§ÃÂ ÃÂ§ÃÂÃÂ±ÃÂÃÂ² ÃÂ§ÃÂÃÂ³ÃÂ¯ÃÂ§ÃÂ³ÃÂ ÃÂ§ÃÂÃÂµÃÂ­ÃÂÃÂ­."
                         }
                     }
                 }
@@ -292,8 +298,8 @@ private fun ConnectionScreen(
             TopAppBar(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("Ø§ÙØ§ØªØµØ§Ù", style = MaterialTheme.typography.titleLarge)
-                        Text("WiâFi TV Remote", style = MaterialTheme.typography.labelMedium)
+                        Text("ÃÂ§ÃÂÃÂ§ÃÂªÃÂµÃÂ§ÃÂ", style = MaterialTheme.typography.titleLarge)
+                        Text("WiÃ¢ÂÂFi TV Remote", style = MaterialTheme.typography.labelMedium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -327,13 +333,13 @@ private fun ConnectionScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                 ) {
-                    Text("Ø§ÙØ¨Ø­Ø« Ø¹Ù Ø£Ø¬ÙØ²Ø© Ø§ÙØªÙÙØ²ÙÙÙ")
+                    Text("ÃÂ§ÃÂÃÂ¨ÃÂ­ÃÂ« ÃÂ¹ÃÂ ÃÂ£ÃÂ¬ÃÂÃÂ²ÃÂ© ÃÂ§ÃÂÃÂªÃÂÃÂÃÂ²ÃÂÃÂÃÂ")
                 }
             }
 
             if (devices.isNotEmpty()) {
                 item {
-                    Text("Ø§ÙØ£Ø¬ÙØ²Ø© Ø§ÙÙØ±ÙØ¨Ø©", style = MaterialTheme.typography.titleMedium)
+                    Text("ÃÂ§ÃÂÃÂ£ÃÂ¬ÃÂÃÂ²ÃÂ© ÃÂ§ÃÂÃÂÃÂ±ÃÂÃÂ¨ÃÂ©", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -367,7 +373,7 @@ private fun ConnectionScreen(
                             onClick = { onConnect(device) },
                             modifier = Modifier.heightIn(min = 48.dp)
                         ) {
-                            Text("Ø§ØªØµØ§Ù")
+                            Text("ÃÂ§ÃÂªÃÂµÃÂ§ÃÂ")
                         }
                     }
                 }
@@ -386,15 +392,15 @@ private fun ConnectionScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("Ø¥ÙØ±Ø§Ù Ø§ÙØªÙÙØ²ÙÙÙ", style = MaterialTheme.typography.titleMedium)
+                            Text("ÃÂ¥ÃÂÃÂ±ÃÂ§ÃÂ ÃÂ§ÃÂÃÂªÃÂÃÂÃÂ²ÃÂÃÂÃÂ", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Ø£Ø¯Ø®Ù Ø§ÙØ±ÙØ² Ø§ÙØ¸Ø§ÙØ± Ø¹ÙÙ Ø´Ø§Ø´Ø© Ø§ÙØªÙÙØ²ÙÙÙ.",
+                                "ÃÂ£ÃÂ¯ÃÂ®ÃÂ ÃÂ§ÃÂÃÂ±ÃÂÃÂ² ÃÂ§ÃÂÃÂ¸ÃÂ§ÃÂÃÂ± ÃÂ¹ÃÂÃÂ ÃÂ´ÃÂ§ÃÂ´ÃÂ© ÃÂ§ÃÂÃÂªÃÂÃÂÃÂ²ÃÂÃÂÃÂ.",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             OutlinedTextField(
                                 value = code,
                                 onValueChange = onCodeChange,
-                                label = { Text("Ø±ÙØ² Ø§ÙØ§ÙØªØ±Ø§Ù") },
+                                label = { Text("ÃÂ±ÃÂÃÂ² ÃÂ§ÃÂÃÂ§ÃÂÃÂªÃÂ±ÃÂ§ÃÂ") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                                 modifier = Modifier.fillMaxWidth()
@@ -405,7 +411,7 @@ private fun ConnectionScreen(
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
                             ) {
-                                Text("ØªØ£ÙÙØ¯ Ø§ÙØ±ÙØ²")
+                                Text("ÃÂªÃÂ£ÃÂÃÂÃÂ¯ ÃÂ§ÃÂÃÂ±ÃÂÃÂ²")
                             }
                         }
                     }
