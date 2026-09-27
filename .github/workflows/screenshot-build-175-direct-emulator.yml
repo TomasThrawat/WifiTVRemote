@@ -12,15 +12,14 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools emulator system-images;android-30;default;x86_64"
+
       - name: Capture Build 175 on direct emulator
         run: |
           set -euo pipefail
-
-          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
-          test -d "$SDK_ROOT"
-
-          yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install "platform-tools" "emulator" "system-images;android-30;default;x86_64"
 
           IMAGE_ID="system-images;android-30;default;x86_64"
           echo "Using $IMAGE_ID"
