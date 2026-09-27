@@ -130,7 +130,7 @@ internal class TvRemoteUiActions(private val remote: TvRemote) : RemoteUiActions
 private enum class Destination { REMOTE, APPS, SETTINGS }
 
 @Composable
-fun RemoteScreen(
+internal fun RemoteScreen(
     remote: RemoteUiActions,
     status: String,
     onDisconnect: () -> Unit
