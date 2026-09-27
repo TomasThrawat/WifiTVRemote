@@ -1,32 +1,33 @@
 package com.tomasthrawat.wifitvremote
 
+import androidx.compose.ui.unit.LayoutDirection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RemoteUiBehaviorTest {
     @Test
-    fun referenceCanvas_isFixedLtrAndHomeIsOnReferenceSide() {
-        assertEquals(LayoutDirectionPolicy.LTR, RemoteUiSpec.coordinateLayoutDirection)
-        assertEquals(154, RemoteUiSpec.homeX)
-        assertEquals(100, RemoteUiSpec.playX)
+    fun referenceCanvas_isFixedLtrAndKeepsReferenceHomeAndPlayCoordinates() {
+        assertEquals(LayoutDirection.Ltr, RemoteUiSpec.coordinateLayoutDirection)
+        assertEquals(100, RemoteUiSpec.homeX)
+        assertEquals(154, RemoteUiSpec.playX)
     }
 
     @Test
-    fun quickActions_areActionableAndMapToExpectedCommands() {
+    fun quickActions_areActionableAndHaveExpectedCommands() {
         assertEquals(
             listOf(
                 RemoteQuickAction.BACK,
                 RemoteQuickAction.HOME,
                 RemoteQuickAction.NUMBER_PAD
             ),
-            RemoteUiSpec.quickActions
+            RemoteUiSpec.quickActionCommands
         )
-        assertTrue(RemoteUiSpec.quickActions.all(RemoteUiSpec::isActionable))
+        assertTrue(RemoteUiSpec.quickActionCommands.all(RemoteUiSpec::isActionable))
     }
 
     @Test
-    fun rockerSegments_haveReferenceTouchTarget() {
+    fun rockerSegments_useReferenceInteractiveHeight() {
         assertEquals(32, RemoteUiSpec.rockerSegmentHeightDp)
     }
 }
