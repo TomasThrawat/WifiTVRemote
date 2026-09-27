@@ -82,7 +82,12 @@ private class PreviewRemoteActions : RemoteUiActions {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
-    if (BuildConfig.DEBUG && Build.MODEL.contains("Pixel 8", ignoreCase = true)) {
+    val context = LocalContext.current
+    val isBrowserStackPreview =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            Build.MODEL.contains("Pixel 8", ignoreCase = true)
+
+    if (isBrowserStackPreview) {
         val previewRemote = remember { PreviewRemoteActions() }
         RemoteScreen(
             remote = previewRemote,
@@ -92,7 +97,6 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         return
     }
 
-    val context = LocalContext.current
     val discovery = remember { NsdDiscovery(context) }
     val devices = remember { mutableStateListOf<TvDevice>() }
     val scope = rememberCoroutineScope()
