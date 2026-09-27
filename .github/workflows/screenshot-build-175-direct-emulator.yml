@@ -1,0 +1,82 @@
+name: Build 175 Direct Emulator Screenshot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+
+    steps:
+      - name: Capture Build 175 on direct emulator
+        run: |
+          set -euo pipefail
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME}}"
+          test -d "$SDK_ROOT"
+
+          echo "Installed Android system images:"
+          find "$SDK_ROOT/system-images" -maxdepth 3 -type d -name "x86_64" 2>/dev/null | sort -V || true
+
+          SYSTEM_IMAGE="$(find "$SDK_ROOT/system-images" -maxdepth 3 -type d -name "x86_64" 2>/dev/null | sort -V | tail -n 1)"
+          test -n "$SYSTEM_IMAGE"
+          IMAGE_ID="system-images;$(echo "$SYSTEM_IMAGE" | sed "s#^$SDK_ROOT/system-images/##" | tr "/" ";")"
+          echo "Using $IMAGE_ID"
+
+          echo "no" | avdmanager create avd --force --name build175 --package "$IMAGE_ID" --device "pixel_2"
+
+          emulator -avd build175 \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -no-snapshot \
+            -no-metrics \
+            -gpu swiftshader_indirect \
+            >/tmp/build175-emulator.log 2>&1 &
+
+          adb start-server
+          for i in $(seq 1 120); do
+            if adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" | grep -q "^1$"; then
+              break
+            fi
+            sleep 2
+          done
+
+          test "$(adb shell getprop sys.boot_completed | tr -d "\r")" = "1"
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+
+          curl -fL --retry 3 --retry-all-errors \
+            -o app-debug.apk \
+            "https://github.com/TomasThrawat/WifiTVRemote/releases/download/v1.0.0-build-175/app-debug.apk"
+
+          test -s app-debug.apk
+          sha256sum app-debug.apk
+          test "$(sha256sum app-debug.apk | awk '{print $1}')" = "fa95f35beaed815793bd598b6c403db53a185b5bef46a47d9dbfa1b1b8744d41"
+
+          adb install -r app-debug.apk
+          adb shell am force-stop com.tomasthrawat.wifitvremote
+          adb shell monkey -p com.tomasthrawat.wifitvremote -c android.intent.category.LAUNCHER 1 >/dev/null
+          sleep 5
+
+          mkdir -p screenshot-evidence
+          adb exec-out screencap -p > screenshot-evidence/wifi-tv-remote-build-175.png
+          adb exec-out uiautomator dump /sdcard/window.xml >/dev/null
+          adb shell cat /sdcard/window.xml > screenshot-evidence/ui.xml
+
+          test -s screenshot-evidence/wifi-tv-remote-build-175.png
+          test -s screenshot-evidence/ui.xml
+          file screenshot-evidence/wifi-tv-remote-build-175.png
+
+      - name: Upload real screenshot
+        uses: actions/upload-artifact@v7.0.1
+        if: always()
+        with:
+          name: wifi-tv-remote-build-175-direct-screenshot
+          path: screenshot-evidence/
+          if-no-files-found: error
