@@ -51,15 +51,15 @@ private const val DESIGN_HEIGHT = 619f
 
 @Composable
 private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFE8E7EA)
+    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFEBEAEF)
 
 @Composable
 private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF181818) else Color(0xFFF0F0F4)
+    if (isSystemInDarkTheme()) Color(0xFF181818) else Color(0xFFF5F5F5)
 
 @Composable
 private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF141414) else Color(0xFFF8F8FA)
+    if (isSystemInDarkTheme()) Color(0xFF141414) else Color(0xFFFFFEFF)
 
 @Composable
 private fun remoteText(): Color =
@@ -193,31 +193,36 @@ private fun ReferenceRemoteLayout(
             ReferenceGlyph(Glyph.POWER, remoteText(), Modifier.size(22.dp))
         }
 
-        Column(
+        Surface(
             modifier = Modifier
-                .offset(75.dp, 53.dp)
-                .padding(top = 19.dp)
-                .size(150.dp, 46.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .offset(75.dp, 55.dp)
+                .size(150.dp, 38.dp),
+            color = if (isSystemInDarkTheme()) Color(0xFF191919) else Color.White,
+            shape = RoundedCornerShape(19.dp)
         ) {
-            Text(
-                text = "Samsung Smart TV",
-                color = remoteText(),
-                fontSize = 15.sp,
-                lineHeight = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
-            Box(
-                Modifier
-                    .padding(top = 1.dp)
-                    .size(5.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (status == "متصل" || status == "Connected") Color(0xFF4ED17B)
-                        else remoteMuted()
-                    )
-            )
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (status == "متصل" || status == "Connected") Color(0xFF4ED17B)
+                            else remoteMuted()
+                        )
+                )
+                Text(
+                    text = "Samsung Smart TV",
+                    modifier = Modifier.padding(start = 5.dp),
+                    color = remoteText(),
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
         }
 
         ControlSurface(
@@ -225,7 +230,7 @@ private fun ReferenceRemoteLayout(
             radius = 23, color = remoteSurface2(),
             onClick = remote::input
         ) {
-            ReferenceGlyph(Glyph.CAST, remoteText(), Modifier.size(22.dp))
+            ReferenceGlyph(Glyph.SPEAKER, remoteText(), Modifier.size(22.dp))
         }
 
         ReferenceTextButton("SETUP", 22, 132, 52, 24, onClick = onSetup)
@@ -236,17 +241,7 @@ private fun ReferenceRemoteLayout(
         ReferenceTextButton("EXIT", 24, 243, 45, 46, true, remote::back)
         ReferenceTextButton("CH-LIST", 231, 243, 45, 46, true, remote::menu)
 
-        Row(
-            modifier = Modifier
-                .offset(93.dp, 303.dp)
-                .size(114.dp, 33.dp),
-            horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            MiniGlyphButton("‹", remote::back)
-            MiniGlyphButton("⌂", remote::home)
-            MiniGlyphButton("123", { })
-        }
+        QuickActionPill(Modifier.offset(93.dp, 303.dp))
 
         VerticalRocker(
             modifier = Modifier.offset(45.dp, 351.dp),
@@ -270,9 +265,9 @@ private fun ReferenceRemoteLayout(
             onBottom = remote::channelDown
         )
 
-        MiniControl(100, 351, "≡", remote::menu)
-        MiniControl(154, 351, "i", remote::input)
-        WideControl(100, 406, "MUTE", remote::mute)
+        MiniControl(100, 351, "HOME", remote::home)
+        MiniControl(154, 351, "PLAY", remote::ok)
+        WideControl(100, 406, "BACK", remote::back)
 
         StreamReferenceButton(
             x = 30,
@@ -356,7 +351,7 @@ private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
         modifier
             .size(156.dp)
             .clip(CircleShape)
-            .background(remoteSurface())
+            .background(if (isSystemInDarkTheme()) Color(0xFF171717) else Color(0xFFF5F5F5))
             .border(1.dp, remoteBorder(), CircleShape)
     ) {
         DPadKeyReference(Modifier.offset(55.dp, 7.dp), "▲", remote::up)
@@ -367,7 +362,7 @@ private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
             modifier = Modifier
                 .offset(49.dp, 49.dp)
                 .size(58.dp),
-            color = remoteSurface2(),
+            color = if (isSystemInDarkTheme()) Color(0xFF1C1C1C) else Color(0xFFFAFAFA),
             shape = CircleShape,
             onClick = remote::ok
         ) {
@@ -388,6 +383,25 @@ private fun DPadKeyReference(modifier: Modifier, text: String, onClick: () -> Un
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(text, color = remoteText(), fontSize = 15.sp)
+        }
+    }
+}
+
+@Composable
+private fun QuickActionPill(modifier: Modifier) {
+    Surface(
+        modifier = modifier.size(114.dp, 33.dp),
+        color = remoteSurface2(),
+        shape = RoundedCornerShape(16.5.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(38.dp), contentAlignment = Alignment.Center) { Text("‹", color = remoteText(), fontSize = 15.sp) }
+            Box(Modifier.size(38.dp), contentAlignment = Alignment.Center) { Text("⌂", color = remoteText(), fontSize = 15.sp) }
+            Box(Modifier.size(38.dp), contentAlignment = Alignment.Center) { Text("123", color = remoteText(), fontSize = 8.sp, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -462,16 +476,24 @@ private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
         x, y, 46, 46, 10, remoteSurface2(), onClick
     ) {
-        Text(label, color = remoteText(), fontSize = 13.sp)
+        when (label) {
+            "HOME" -> ReferenceGlyph(Glyph.REMOTE, remoteText(), Modifier.size(18.dp))
+            "PLAY" -> ReferenceGlyph(Glyph.PLAY_PAUSE, remoteText(), Modifier.size(18.dp))
+            else -> Text(label, color = remoteText(), fontSize = 13.sp)
+        }
     }
 }
 
 @Composable
 private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
-        x, y, 101, 46, 10, remoteSurface2(), onClick
+        x, y, 101, 46, 23, remoteSurface2(), onClick
     ) {
-        Text(label, color = remoteMuted(), fontSize = 8.sp, fontWeight = FontWeight.Medium)
+        if (label == "BACK") {
+            ReferenceGlyph(Glyph.BACK, remoteText(), Modifier.size(22.dp))
+        } else {
+            Text(label, color = remoteMuted(), fontSize = 8.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }
 
@@ -488,139 +510,41 @@ private fun StreamReferenceButton(
             .offset(x.dp, y.dp)
             .size(74.dp, 40.dp),
         color = remoteSurface2(),
-        shape = RoundedCornerShape(9.dp),
+        shape = RoundedCornerShape(20.dp),
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = text,
-                color = textColor,
-                fontSize = 8.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
-        }
-    }
-}
-
-private enum class Glyph { POWER, REMOTE, APPS, CAST, SETTINGS }
-
-@Composable
-private fun ReferenceGlyph(
-    kind: Glyph,
-    tint: Color,
-    modifier: Modifier
-) {
-    Canvas(modifier) {
-        val stroke = (size.minDimension * 0.075f).coerceAtLeast(1.3f)
-        val center = size.minDimension / 2f
-        when (kind) {
-            Glyph.POWER -> {
-                drawArc(
-                    color = tint,
-                    startAngle = -45f,
-                    sweepAngle = 270f,
-                    useCenter = false,
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        width = stroke,
-                        cap = StrokeCap.Round
-                    )
-                )
-                drawLine(
-                    color = tint,
-                    start = androidx.compose.ui.geometry.Offset(center, size.height * 0.08f),
-                    end = androidx.compose.ui.geometry.Offset(center, size.height * 0.46f),
-                    strokeWidth = stroke,
-                    cap = StrokeCap.Round
-                )
-            }
-            Glyph.REMOTE -> {
-                val w = size.width * 0.46f
-                val h = size.height * 0.78f
-                val left = (size.width - w) / 2f
-                val top = (size.height - h) / 2f
-                drawRoundRect(
-                    color = tint,
-                    topLeft = androidx.compose.ui.geometry.Offset(left, top),
-                    size = androidx.compose.ui.geometry.Size(w, h),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.18f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
-                )
-                drawCircle(tint, radius = size.minDimension * 0.09f, center = androidx.compose.ui.geometry.Offset(center, top + h * 0.26f))
-                val r = size.minDimension * 0.055f
-                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center - r * 1.8f, top + h * 0.48f))
-                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center + r * 1.8f, top + h * 0.48f))
-                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center, top + h * 0.64f))
-            }
-            Glyph.APPS -> {
-                val gap = size.minDimension * 0.12f
-                val cell = (size.minDimension * 0.30f)
-                val startX = center - cell - gap / 2f
-                val startY = center - cell - gap / 2f
-                for (row in 0..1) for (col in 0..1) {
-                    drawRoundRect(
-                        color = tint,
-                        topLeft = androidx.compose.ui.geometry.Offset(
-                            startX + col * (cell + gap),
-                            startY + row * (cell + gap)
-                        ),
-                        size = androidx.compose.ui.geometry.Size(cell, cell),
-                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cell * 0.18f)
-                    )
+            when {
+                text.contains("YouTube", ignoreCase = true) -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(14.dp, 10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color(0xFFFF0000)),
+                        contentAlignment = Alignment.Center
+                    ) { Text("▶", color = Color.White, fontSize = 6.sp) }
+                    Text("YouTube", modifier = Modifier.padding(start = 2.dp), color = remoteText(), fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
                 }
-            }
-            Glyph.CAST -> {
-                val left = size.width * 0.18f
-                val top = size.height * 0.18f
-                val right = size.width * 0.82f
-                val bottom = size.height * 0.68f
-                drawRoundRect(
-                    color = tint,
-                    topLeft = androidx.compose.ui.geometry.Offset(left, top),
-                    size = androidx.compose.ui.geometry.Size(right-left, bottom-top),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.minDimension * 0.08f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
-                )
-                drawArc(
-                    color = tint,
-                    startAngle = 0f,
-                    sweepAngle = 90f,
-                    useCenter = false,
-                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height * 0.58f),
-                    size = androidx.compose.ui.geometry.Size(size.width * 0.55f, size.height * 0.55f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round)
-                )
-                drawCircle(
-                    color = tint,
-                    radius = stroke * 0.75f,
-                    center = androidx.compose.ui.geometry.Offset(size.width * 0.18f, size.height * 0.80f)
-                )
-            }
-            Glyph.SETTINGS -> {
-                val r = size.minDimension * 0.26f
-                for (i in 0 until 8) {
-                    val a = Math.toRadians(i * 45.0)
-                    val inner = r * 1.35f
-                    val outer = r * 1.75f
-                    val x1 = center + kotlin.math.cos(a).toFloat() * inner
-                    val y1 = center + kotlin.math.sin(a).toFloat() * inner
-                    val x2 = center + kotlin.math.cos(a).toFloat() * outer
-                    val y2 = center + kotlin.math.sin(a).toFloat() * outer
-                    drawLine(
-                        color = tint,
-                        start = androidx.compose.ui.geometry.Offset(x1, y1),
-                        end = androidx.compose.ui.geometry.Offset(x2, y2),
-                        strokeWidth = stroke * 1.25f,
-                        cap = StrokeCap.Square
-                    )
+                text == "NETFLIX" -> Text("NETFLIX", color = Color(0xFFE50914), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("prime video", color = remoteText(), fontSize = 7.sp, fontWeight = FontWeight.SemiBold)
+                    Canvas(
+                        Modifier
+                            .padding(top = 0.dp)
+                            .width(25.dp)
+                            .height(4.dp)
+                    ) {
+                        drawArc(
+                            color = Color(0xFF00A8E1),
+                            startAngle = 10f,
+                            sweepAngle = 150f,
+                            useCenter = false,
+                            topLeft = androidx.compose.ui.geometry.Offset(1f, -2f),
+                            size = androidx.compose.ui.geometry.Size(size.width - 2f, size.height * 2.4f),
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(1.2f, cap = StrokeCap.Round)
+                        )
+                    }
                 }
-                drawCircle(
-                    color = tint,
-                    radius = r * 1.05f,
-                    center = androidx.compose.ui.geometry.Offset(center, center),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke * 1.25f)
-                )
-                drawCircle(tint, r * 0.36f, androidx.compose.ui.geometry.Offset(center, center))
             }
         }
     }
