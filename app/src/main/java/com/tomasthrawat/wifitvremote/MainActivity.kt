@@ -116,7 +116,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     var showRemote by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var codeRequested by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("WiÃÂ¢ÃÂÃÂFi ÃÂÃÂÃÂÃÂÃÂÃÂ· ÃÂ¢ÃÂÃÂ¢ ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂÃÂÃÂ² ÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ«") }
+    var status by remember { mutableStateOf("Wi-Fi • Searching for devices") }
     var scanJob by remember { mutableStateOf<Job?>(null) }
     var scanGeneration by remember { mutableIntStateOf(0) }
     var attemptGeneration by remember { mutableIntStateOf(0) }
@@ -139,20 +139,20 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         val thisScan = scanGeneration
         scanJob = null
         devices.clear()
-        status = "ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ«..."
+        status = "Searching..."
 
         scanJob = scope.launch {
             discovery.scan().collect { device ->
                 if (thisScan == scanGeneration && devices.none { it.host == device.host }) {
                     devices.add(device)
-                    status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
+                    status = "Found ${devices.size} devices"
                 }
             }
             if (thisScan == scanGeneration) {
                 status = if (devices.isEmpty()) {
-                    "ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ©"
+                    "No devices found"
                 } else {
-                    "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
+                    "Found ${devices.size} devices"
                 }
                 scanJob = null
             }
@@ -166,7 +166,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         stopCurrentConnection()
 
         val token = attemptGeneration
-        status = "ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂ ${device.name}..."
+        status = "Connecting to ${device.name}..."
         code = ""
         codeRequested = false
 
@@ -177,14 +177,14 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             onCode = {
                 if (token == attemptGeneration && pairing === p) {
                     codeRequested = true
-                    status = "ÃÂÃÂ£ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ ÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ."
+                    status = "Enter the pairing code shown on your TV."
                 }
             },
             onPaired = { identity ->
                 if (token == attemptGeneration && pairing === p) {
                     pairing = null
                     p.stop()
-                    status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ. ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ..."
+                    status = "Paired. Connecting..."
 
                     lateinit var r: TvRemote
                     r = TvRemote(
@@ -205,7 +205,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 remote = null
                                 connected = false
                                 showRemote = false
-                                status = "ÃÂÃÂ®ÃÂÃÂ·ÃÂÃÂ£: " + (error.message ?: error.javaClass.simpleName)
+                                status = "Error: " + (error.message ?: error.javaClass.simpleName)
                             }
                         }
                     )
@@ -218,7 +218,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     p.stop()
                     pairing = null
                     codeRequested = false
-                    status = "ÃÂÃÂ®ÃÂÃÂ·ÃÂÃÂ£: " + (error.message ?: error.javaClass.simpleName)
+                    status = "Error: " + (error.message ?: error.javaClass.simpleName)
                 }
             }
         )
@@ -248,7 +248,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             status = status,
             onDisconnect = {
                 stopCurrentConnection()
-                status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂÃÂÃÂµÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ"
+                status = "Disconnected"
             }
         )
     } else {
@@ -269,9 +269,9 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     val success = currentPairing.submitCode(submittedCode)
                     if (token == attemptGeneration && pairing === currentPairing) {
                         status = if (success) {
-                            "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ². ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂ± ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ..."
+                            "Code submitted. Waiting for the TV..."
                         } else {
-                            "ÃÂÃÂªÃÂÃÂ¹ÃÂÃÂ°ÃÂÃÂ± ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ². ÃÂÃÂªÃÂÃÂ£ÃÂÃÂÃÂÃÂ¯ ÃÂÃÂÃÂÃÂ ÃÂÃÂ¥ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ³ÃÂÃÂ¯ÃÂÃÂ§ÃÂÃÂ³ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂµÃÂÃÂ­ÃÂÃÂÃÂÃÂ­."
+                            "Couldn't submit the code. Make sure you entered the correct code."
                         }
                     }
                 }
@@ -298,8 +298,8 @@ private fun ConnectionScreen(
             TopAppBar(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ", style = MaterialTheme.typography.titleLarge)
-                        Text("WiÃÂ¢ÃÂÃÂFi TV Remote", style = MaterialTheme.typography.labelMedium)
+                        Text("Connect", style = MaterialTheme.typography.titleLarge)
+                        Text("Wi-Fi TV Remote", style = MaterialTheme.typography.labelMedium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -333,13 +333,13 @@ private fun ConnectionScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                 ) {
-                    Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ« ÃÂÃÂ¹ÃÂÃÂ ÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ")
+                    Text("Search for TVs")
                 }
             }
 
             if (devices.isNotEmpty()) {
                 item {
-                    Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ©", style = MaterialTheme.typography.titleMedium)
+                    Text("Nearby devices", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -373,7 +373,7 @@ private fun ConnectionScreen(
                             onClick = { onConnect(device) },
                             modifier = Modifier.heightIn(min = 48.dp)
                         ) {
-                            Text("ÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ")
+                            Text("Connect")
                         }
                     }
                 }
@@ -392,15 +392,15 @@ private fun ConnectionScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("ÃÂÃÂ¥ÃÂÃÂÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ", style = MaterialTheme.typography.titleMedium)
+                            Text("Pair TV", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "ÃÂÃÂ£ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ´ÃÂÃÂ§ÃÂÃÂ´ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ.",
+                                "Enter the code shown on your TV screen.",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             OutlinedTextField(
                                 value = code,
                                 onValueChange = onCodeChange,
-                                label = { Text("ÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ") },
+                                label = { Text("Pairing code") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                                 modifier = Modifier.fillMaxWidth()
@@ -411,7 +411,7 @@ private fun ConnectionScreen(
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
                             ) {
-                                Text("ÃÂÃÂªÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂ¯ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ²")
+                                Text("Submit code")
                             }
                         }
                     }
