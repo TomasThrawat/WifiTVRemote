@@ -1316,7 +1316,7 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
                 Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 Text(
                     status,
-                    color = if (status == "متصل" || status == "Connected") Color(0xFF4ED17B) else remoteMuted(),
+                    color = if (status == "Connected") Color(0xFF4ED17B) else remoteMuted(),
                     fontSize = 10.sp
                 )
             }
