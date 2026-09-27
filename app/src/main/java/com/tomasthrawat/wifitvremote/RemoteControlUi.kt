@@ -71,11 +71,11 @@ private fun remoteGreen(): Color =
 
 @Composable
 private fun remoteBorder(): Color =
-    if (isSystemInDarkTheme()) remoteBorder() else Color.Black.copy(alpha = 0.10f)
+    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.10f)
 
 @Composable
 private fun remoteKeyTint(): Color =
-    if (isSystemInDarkTheme()) remoteKeyTint() else Color.Black.copy(alpha = 0.035f)
+    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.045f) else Color.Black.copy(alpha = 0.035f)
 
 private val AppBlue = Color(0xFF1D6EFF)
 
@@ -103,7 +103,7 @@ internal interface RemoteUiActions {
     fun pound()
 }
 
-internal class TvRemoteUiActions(private val remote: RemoteUiActions) : RemoteUiActions {
+internal class TvRemoteUiActions(private val remote: TvRemote) : RemoteUiActions {
     override fun setTextStateListener(listener: ((Boolean) -> Unit)?) = remote.setTextStateListener(listener)
     override fun sendText(text: String) = remote.sendText(text)
     override fun launchAppLink(appLink: String) = remote.launchAppLink(appLink)
