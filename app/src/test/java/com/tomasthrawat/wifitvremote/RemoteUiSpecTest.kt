@@ -11,7 +11,7 @@ class RemoteUiSpecTest {
             RemoteUiSpec.volumeControls
         )
         assertEquals(
-            listOf("Ch +", "Menu", "Ch -"),
+            listOf("CH-LIST", "Ch +", "Ch -"),
             RemoteUiSpec.channelControls
         )
         assertEquals(

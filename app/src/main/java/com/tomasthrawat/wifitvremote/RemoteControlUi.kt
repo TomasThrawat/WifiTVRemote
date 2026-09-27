@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,19 +45,93 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 
-private val AppBlack = Color(0xFF000000)
-private val AppSurface = Color(0xFF171717)
-private val AppSurface2 = Color(0xFF222222)
+@Composable
+private fun remoteBackground(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF0D0F12) else Color(0xFFE7EAF2)
+
+@Composable
+private fun remoteSurface(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF17191D) else Color(0xFFF8F9FC)
+
+@Composable
+private fun remoteSurface2(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF23262B) else Color(0xFFFFFFFF)
+
+@Composable
+private fun remoteText(): Color =
+    if (isSystemInDarkTheme()) Color(0xFFF5F5F7) else Color(0xFF17191D)
+
+@Composable
+private fun remoteMuted(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF91959E) else Color(0xFF6D717A)
+
+@Composable
+private fun remoteGreen(): Color =
+    if (isSystemInDarkTheme()) Color(0xFF25C77A) else Color(0xFF168B58)
+
+@Composable
+private fun remoteBorder(): Color =
+    if (isSystemInDarkTheme()) remoteBorder() else Color.Black.copy(alpha = 0.10f)
+
+@Composable
+private fun remoteKeyTint(): Color =
+    if (isSystemInDarkTheme()) remoteKeyTint() else Color.Black.copy(alpha = 0.035f)
+
 private val AppBlue = Color(0xFF1D6EFF)
-private val AppText = Color(0xFFF5F5F5)
-private val AppMuted = Color(0xFF8D8D93)
-private val AppGreen = Color(0xFF25C77A)
+
+internal interface RemoteUiActions {
+    fun setTextStateListener(listener: ((Boolean) -> Unit)?)
+    fun sendText(text: String)
+    fun launchAppLink(appLink: String)
+    fun power()
+    fun home()
+    fun back()
+    fun up()
+    fun down()
+    fun left()
+    fun right()
+    fun ok()
+    fun volumeUp()
+    fun volumeDown()
+    fun mute()
+    fun channelUp()
+    fun channelDown()
+    fun menu()
+    fun input()
+    fun number(number: Int)
+    fun star()
+    fun pound()
+}
+
+internal class TvRemoteUiActions(private val remote: RemoteUiActions) : RemoteUiActions {
+    override fun setTextStateListener(listener: ((Boolean) -> Unit)?) = remote.setTextStateListener(listener)
+    override fun sendText(text: String) = remote.sendText(text)
+    override fun launchAppLink(appLink: String) = remote.launchAppLink(appLink)
+    override fun power() = remote.power()
+    override fun home() = remote.home()
+    override fun back() = remote.back()
+    override fun up() = remote.up()
+    override fun down() = remote.down()
+    override fun left() = remote.left()
+    override fun right() = remote.right()
+    override fun ok() = remote.ok()
+    override fun volumeUp() = remote.volumeUp()
+    override fun volumeDown() = remote.volumeDown()
+    override fun mute() = remote.mute()
+    override fun channelUp() = remote.channelUp()
+    override fun channelDown() = remote.channelDown()
+    override fun menu() = remote.menu()
+    override fun input() = remote.input()
+    override fun number(number: Int) = remote.number(number)
+    override fun star() = remote.star()
+    override fun pound() = remote.pound()
+}
 
 private enum class Destination { REMOTE, APPS, SETTINGS }
 
 @Composable
 fun RemoteScreen(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     status: String,
     onDisconnect: () -> Unit
 ) {
@@ -72,14 +147,14 @@ fun RemoteScreen(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = AppBlack,
+        containerColor = remoteBackground(),
         bottomBar = {
             Row(
                 Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .background(AppBlack)
-                    .border(1.dp, Color.White.copy(alpha = 0.08f)),
+                    .background(remoteBackground())
+                    .border(1.dp, remoteBorder()),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -98,14 +173,14 @@ fun RemoteScreen(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(AppBlack)
+                .background(remoteBackground())
                 .then(Modifier)
         ) {
             Box(
                 Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .background(AppBlack)
+                    .background(remoteBackground())
             ) {
                 when (destination) {
                     Destination.REMOTE.name -> RemoteReferenceLayout(
@@ -153,7 +228,7 @@ private fun BottomItem(
         )
         Text(
             label,
-            color = if (selected) AppText else AppMuted,
+            color = if (selected) remoteText() else remoteMuted(),
             style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )
@@ -170,8 +245,8 @@ private fun CompactButton(
         onClick = onClick,
         modifier = modifier.height(30.dp),
         shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppText),
+        border = BorderStroke(1.dp, remoteBorder()),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = remoteText()),
         contentPadding = PaddingValues(horizontal = 6.dp)
     ) {
         Text(
@@ -184,7 +259,7 @@ private fun CompactButton(
 
 @Composable
 private fun RemoteReferenceLayout(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     status: String,
     text: String,
     textReady: Boolean,
@@ -196,7 +271,7 @@ private fun RemoteReferenceLayout(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBlack)
+            .background(remoteBackground())
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -215,7 +290,7 @@ private fun RemoteReferenceLayout(
             ) {
                 Text(
                     "Samsung Smart TV",
-                    color = AppText,
+                    color = remoteText(),
                     style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -227,11 +302,11 @@ private fun RemoteReferenceLayout(
                         Modifier
                             .size(5.dp)
                             .clip(CircleShape)
-                            .background(AppGreen)
+                            .background(remoteGreen())
                     )
                     Text(
                         if (status == "متصل") "Connected" else status,
-                        color = AppGreen,
+                        color = remoteGreen(),
                         style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
                         maxLines = 1
                     )
@@ -287,7 +362,7 @@ private fun RemoteReferenceLayout(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            color = AppSurface,
+            color = remoteSurface(),
             shape = RoundedCornerShape(12.dp)
         ) {
             Row(
@@ -301,12 +376,12 @@ private fun RemoteReferenceLayout(
                     enabled = textReady,
                     singleLine = true,
                     placeholder = {
-                        Text("Type on TV", color = AppMuted)
+                        Text("Type on TV", color = remoteMuted())
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = AppText,
-                        unfocusedTextColor = AppText,
+                        focusedTextColor = remoteText(),
+                        unfocusedTextColor = remoteText(),
                         focusedBorderColor = AppBlue,
                         unfocusedBorderColor = Color.Transparent,
                         focusedContainerColor = Color.Transparent,
@@ -318,7 +393,7 @@ private fun RemoteReferenceLayout(
                     onClick = onSend,
                     enabled = textReady && text.isNotEmpty()
                 ) {
-                    Text("Send", color = if (textReady) AppBlue else AppMuted)
+                    Text("Send", color = if (textReady) AppBlue else remoteMuted())
                 }
             }
         }
@@ -335,7 +410,7 @@ private fun RemoteReferenceLayout(
             StreamButton("YouTube", Modifier.weight(1f)) {
                 remote.launchAppLink("https://www.youtube.com/")
             }
-            StreamButton("Prime Video", Modifier.weight(1f)) {
+            StreamButton("prime video", Modifier.weight(1f)) {
                 remote.launchAppLink("https://www.primevideo.com/")
             }
         }
@@ -346,13 +421,13 @@ private fun RemoteReferenceLayout(
 private fun DecorativeHeaderButton(label: String) {
     Surface(
         modifier = Modifier.size(30.dp),
-        color = AppSurface2,
+        color = remoteSurface2(),
         shape = CircleShape
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = AppText,
+                color = remoteText(),
                 style = androidx.compose.material3.MaterialTheme.typography.labelMedium
             )
         }
@@ -361,14 +436,14 @@ private fun DecorativeHeaderButton(label: String) {
 
 @Composable
 private fun VolumeRocker(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     modifier: Modifier
 ) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(25.dp))
-            .background(AppSurface)
-            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(25.dp)),
+            .background(remoteSurface())
+            .border(1.dp, remoteBorder(), RoundedCornerShape(25.dp)),
         verticalArrangement = Arrangement.Center
     ) {
         RockerButton("+", remote::volumeUp, Modifier.weight(1f))
@@ -391,7 +466,7 @@ private fun RockerButton(
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = AppText,
+                color = remoteText(),
                 style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold
             )
@@ -401,14 +476,14 @@ private fun RockerButton(
 
 @Composable
 private fun ChannelCluster(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     modifier: Modifier
 ) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        RemoteSideButton("LIST", remote::menu)
+        RemoteSideButton("CH-LIST", remote::menu)
         RemoteSideButton("CH+", remote::channelUp)
         RemoteSideButton("CH−", remote::channelDown)
     }
@@ -420,14 +495,14 @@ private fun RemoteSideButton(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(38.dp),
-        color = AppSurface2,
+        color = remoteSurface2(),
         shape = RoundedCornerShape(9.dp),
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = AppText,
+                color = remoteText(),
                 style = androidx.compose.material3.MaterialTheme.typography.labelSmall
             )
         }
@@ -441,14 +516,14 @@ private fun SmallCircleButton(
 ) {
     Surface(
         modifier = Modifier.size(31.dp),
-        color = AppSurface2,
+        color = remoteSurface2(),
         shape = CircleShape,
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 label,
-                color = AppText,
+                color = remoteText(),
                 style = androidx.compose.material3.MaterialTheme.typography.labelSmall
             )
         }
@@ -457,14 +532,14 @@ private fun SmallCircleButton(
 
 @Composable
 private fun DPad(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     modifier: Modifier
 ) {
     Box(
         modifier
             .clip(CircleShape)
-            .background(AppSurface)
-            .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape),
+            .background(remoteSurface())
+            .border(1.dp, remoteBorder(), CircleShape),
         contentAlignment = Alignment.Center
     ) {
         DPadKey(Modifier.align(Alignment.TopCenter), "▲", remote::up)
@@ -492,19 +567,19 @@ private fun DPadKey(
 ) {
     Surface(
         modifier = modifier.size(40.dp),
-        color = Color.White.copy(alpha = 0.045f),
+        color = remoteKeyTint(),
         shape = CircleShape,
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(label, color = AppText)
+            Text(label, color = remoteText())
         }
     }
 }
 
 @Composable
 private fun NumberPad(
-    remote: TvRemote,
+    remote: RemoteUiActions,
     modifier: Modifier
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -546,14 +621,14 @@ private fun NumberKey(
 ) {
     Surface(
         modifier = modifier,
-        color = AppSurface,
+        color = remoteSurface(),
         shape = RoundedCornerShape(9.dp),
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
                 digit,
-                color = AppText,
+                color = remoteText(),
                 style = androidx.compose.material3.MaterialTheme.typography.titleSmall
             )
         }
@@ -567,8 +642,8 @@ private fun StreamButton(label: String, modifier: Modifier, onClick: () -> Unit)
         modifier = modifier.height(33.dp),
         shape = RoundedCornerShape(9.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppSurface2,
-            contentColor = AppText
+            containerColor = remoteSurface2(),
+            contentColor = remoteText()
         ),
         contentPadding = PaddingValues(horizontal = 5.dp)
     ) {
@@ -581,23 +656,23 @@ private fun StreamButton(label: String, modifier: Modifier, onClick: () -> Unit)
 }
 
 @Composable
-private fun AppsPage(remote: TvRemote) {
+private fun AppsPage(remote: RemoteUiActions) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(AppBlack)
+            .background(remoteBackground())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
             "Apps",
-            color = AppText,
+            color = remoteText(),
             style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Text(
             "Launch supported TV app links.",
-            color = AppMuted,
+            color = remoteMuted(),
             style = androidx.compose.material3.MaterialTheme.typography.bodySmall
         )
         listOf(
@@ -612,8 +687,8 @@ private fun AppsPage(remote: TvRemote) {
                     .height(46.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppSurface,
-                    contentColor = AppText
+                    containerColor = remoteSurface(),
+                    contentColor = remoteText()
                 )
             ) {
                 Text(name)
@@ -627,30 +702,30 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(AppBlack)
+            .background(remoteBackground())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
             "Settings",
-            color = AppText,
+            color = remoteText(),
             style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
         Card(
             Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = AppSurface),
+            colors = CardDefaults.cardColors(containerColor = remoteSurface()),
             shape = RoundedCornerShape(14.dp)
         ) {
             Column(
                 Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text("Samsung Smart TV", color = AppText, fontWeight = FontWeight.SemiBold)
-                Text(status, color = AppGreen)
+                Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold)
+                Text(status, color = remoteGreen())
                 Text(
                     "Remote controls use the authenticated TV connection.",
-                    color = AppMuted,
+                    color = remoteMuted(),
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall
                 )
             }
@@ -661,7 +736,7 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
                 .fillMaxWidth()
                 .height(46.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppText),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = remoteText()),
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
         ) {
             Text("Disconnect TV")

@@ -52,9 +52,46 @@ private fun WifiTvRemoteTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = colors, content = content)
 }
 
+private class PreviewRemoteActions : RemoteUiActions {
+    override fun setTextStateListener(listener: ((Boolean) -> Unit)?) {
+        listener?.invoke(true)
+    }
+
+    override fun sendText(text: String) = Unit
+    override fun launchAppLink(appLink: String) = Unit
+    override fun power() = Unit
+    override fun home() = Unit
+    override fun back() = Unit
+    override fun up() = Unit
+    override fun down() = Unit
+    override fun left() = Unit
+    override fun right() = Unit
+    override fun ok() = Unit
+    override fun volumeUp() = Unit
+    override fun volumeDown() = Unit
+    override fun mute() = Unit
+    override fun channelUp() = Unit
+    override fun channelDown() = Unit
+    override fun menu() = Unit
+    override fun input() = Unit
+    override fun number(number: Int) = Unit
+    override fun star() = Unit
+    override fun pound() = Unit
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
+    if (BuildConfig.DEBUG && Build.MODEL.contains("Pixel 8", ignoreCase = true)) {
+        val previewRemote = remember { PreviewRemoteActions() }
+        RemoteScreen(
+            remote = previewRemote,
+            status = "متصل",
+            onDisconnect = {}
+        )
+        return
+    }
+
     val context = LocalContext.current
     val discovery = remember { NsdDiscovery(context) }
     val devices = remember { mutableStateListOf<TvDevice>() }
@@ -194,7 +231,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
 
     if (showRemote && connected && remote != null) {
         RemoteScreen(
-            remote = remote!!,
+            remote = TvRemoteUiActions(remote!!),
             status = status,
             onDisconnect = {
                 stopCurrentConnection()
