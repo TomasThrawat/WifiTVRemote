@@ -86,7 +86,9 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     val context = LocalContext.current
     val isBrowserStackPreview =
         (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
-            Build.HARDWARE.contains("ranchu", ignoreCase = true) || Build.PRODUCT.contains("sdk_gphone", ignoreCase = true) || Build.MODEL.contains("Pixel", ignoreCase = true)
+            (Build.HARDWARE.contains("ranchu", ignoreCase = true) ||
+                Build.PRODUCT.contains("sdk_gphone", ignoreCase = true) ||
+                Build.MODEL.contains("Pixel", ignoreCase = true))
 
     if (isBrowserStackPreview) {
         val previewRemote = remember { PreviewRemoteActions() }
