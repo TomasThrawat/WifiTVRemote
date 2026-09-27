@@ -193,6 +193,7 @@ internal fun RemoteScreen(
     }
 }
 
+
 @Composable
 private fun ReferenceRemoteLayout(
     remote: RemoteUiActions,
@@ -210,8 +211,9 @@ private fun ReferenceRemoteLayout(
             .fillMaxSize()
             .background(remoteBackground())
     ) {
+        // Top row: Power, Setup, Source.
         ControlSurface(
-            x = 23, y = 54, w = 46, h = 46,
+            x = 20, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::power,
             contentDescription = "Power"
@@ -219,107 +221,122 @@ private fun ReferenceRemoteLayout(
             ReferenceGlyph(Glyph.POWER, Color(0xFFFF0000), Modifier.size(22.dp))
         }
 
-        Surface(
-            modifier = Modifier
-                .offset(75.dp, 55.dp)
-                .size(150.dp, 38.dp),
-            color = if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color.White,
-            shape = RoundedCornerShape(19.dp)
+        ControlSurface(
+            x = 127, y = 54, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = onSetup,
+            contentDescription = "Setup"
         ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    Modifier
-                        .size(5.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (status == "ÙØªØµÙ" || status == "Connected") Color(0xFF4ED17B)
-                            else remoteMuted()
-                        )
-                )
-                Text(
-                    text = "Samsung Smart TV",
-                    modifier = Modifier.padding(start = 5.dp),
-                    color = remoteText(),
-                    fontSize = 10.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
-            }
+            ReferenceGlyph(Glyph.SETTINGS, remoteText(), Modifier.size(20.dp))
         }
 
         ControlSurface(
-            x = 231, y = 54, w = 46, h = 46,
+            x = 234, y = 54, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = remote::input,
+            contentDescription = "Source"
+        ) {
+            Text(
+                "SOURCE",
+                color = remoteText(),
+                fontSize = 7.5.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        // Large circular navigation pad.
+        DPadReference(
+            remote = remote,
+            modifier = Modifier.offset(72.dp, 122.dp)
+        )
+
+        // Secondary controls below the D-pad.
+        ReferenceTextButton(
+            text = "EXIT",
+            x = 24, y = 291, w = 45, h = 42,
+            fill = true,
+            onClick = remote::back
+        )
+        ReferenceTextButton(
+            text = "CH-LIST",
+            x = 231, y = 291, w = 45, h = 42,
+            fill = true,
+            onClick = remote::menu
+        )
+
+        // Volume and channel rockers, with a separate Mute button between them.
+        DualRocker(
+            modifier = Modifier.offset(45.dp, 348.dp),
+            label = "VOL",
+            onUp = remote::volumeUp,
+            onDown = remote::volumeDown
+        )
+
+        DualRocker(
+            modifier = Modifier.offset(209.dp, 348.dp),
+            label = "CH",
+            onUp = remote::channelUp,
+            onDown = remote::channelDown
+        )
+
+        ControlSurface(
+            x = 127, y = 366, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::mute,
             contentDescription = "Mute"
         ) {
-            ReferenceGlyph(Glyph.SPEAKER, remoteText(), Modifier.size(22.dp))
+            ReferenceGlyph(Glyph.SPEAKER, remoteText(), Modifier.size(20.dp))
         }
 
-        ReferenceTextButton("SETUP", 22, 132, 52, 24, onClick = onSetup)
-        ReferenceTextButton("SOURCE", 224, 132, 54, 24, onClick = remote::input)
+        // Navigation row.
+        CompactNavControl(
+            x = 91, y = 454,
+            contentDescription = "Home",
+            onClick = remote::home
+        ) {
+            ReferenceGlyph(Glyph.HOME, remoteText(), Modifier.size(18.dp))
+        }
 
-        DPadReference(remote, Modifier.offset(72.dp, 133.dp))
+        CompactNavControl(
+            x = 132, y = 454,
+            contentDescription = "Back",
+            onClick = remote::back
+        ) {
+            ReferenceGlyph(Glyph.BACK, remoteText(), Modifier.size(18.dp))
+        }
 
-        ReferenceTextButton("EXIT", 24, 243, 45, 46, true, remote::back)
-        ReferenceTextButton("CH-LIST", 231, 243, 45, 46, true, remote::menu)
+        CompactNavControl(
+            x = 173, y = 454,
+            contentDescription = "Play/Pause",
+            onClick = remote::playPause
+        ) {
+            ReferenceGlyph(Glyph.PLAY_PAUSE, remoteText(), Modifier.size(18.dp))
+        }
 
-        QuickActionPill(
-            modifier = Modifier.offset(93.dp, 303.dp),
-            remote = remote,
-            onShowNumberPad = { numberPadOpen = true }
-        )
-
-        VerticalRocker(
-            modifier = Modifier.offset(45.dp, 351.dp),
-            label = "VOL",
-            top = "+",
-            middle = "â",
-            bottom = "â",
-            onTop = remote::volumeUp,
-            onMiddle = remote::mute,
-            onBottom = remote::volumeDown
-        )
-
-        VerticalRocker(
-            modifier = Modifier.offset(209.dp, 351.dp),
-            label = "CH",
-            top = "+",
-            middle = "â¢",
-            bottom = "â",
-            onTop = remote::channelUp,
-            onMiddle = remote::menu,
-            onBottom = remote::channelDown
-        )
-
-        MiniControl(RemoteUiSpec.homeX, 351, "HOME", remote::home)
-        MiniControl(RemoteUiSpec.playX, 351, "PLAY", remote::playPause)
-        WideControl(100, 406, "BACK", remote::back)
-
+        // Four streaming shortcuts from the reference image.
         StreamReferenceButton(
-            x = 30,
-            y = 489,
-            text = "â¶ YouTube",
+            x = 9, y = 503,
+            text = "YouTube",
             textColor = Color(0xFFFF3333),
             onClick = { remote.launchAppLink("https://www.youtube.com/") }
         )
         StreamReferenceButton(
-            x = 113,
-            y = 489,
+            x = 80, y = 503,
             text = "NETFLIX",
             textColor = Color(0xFFE50914),
             onClick = { remote.launchAppLink("https://www.netflix.com/") }
         )
         StreamReferenceButton(
-            x = 196,
-            y = 489,
+            x = 151, y = 503,
             text = "prime video",
             textColor = remoteText(),
             onClick = { remote.launchAppLink("https://www.primevideo.com/") }
+        )
+        StreamReferenceButton(
+            x = 222, y = 503,
+            text = "Disney+",
+            textColor = Color(0xFF6B63D9),
+            onClick = { remote.launchAppLink("https://www.disneyplus.com/") }
         )
 
         if (numberPadOpen) {
@@ -354,7 +371,7 @@ private fun ReferenceTextButton(
         Text(
             text = text,
             color = remoteText(),
-            fontSize = if (text == "CH-LIST") 8.sp else 9.sp,
+            fontSize = if (text == "CH-LIST") 7.sp else 8.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )
@@ -781,6 +798,63 @@ private fun MiniGlyphButton(text: String, onClick: () -> Unit) {
     }
 }
 
+
+@Composable
+private fun DualRocker(
+    modifier: Modifier,
+    label: String,
+    onUp: () -> Unit,
+    onDown: () -> Unit
+) {
+    Surface(
+        modifier = modifier.size(46.dp, 101.dp),
+        color = remoteSurface2(),
+        shape = RoundedCornerShape(23.dp),
+        border = BorderStroke(1.dp, remoteBorder())
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            RockerAction(
+                contentDescription = "$label up",
+                onClick = onUp,
+                icon = "+"
+            )
+            Text(
+                label,
+                color = remoteMuted(),
+                fontSize = 7.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            RockerAction(
+                contentDescription = "$label down",
+                onClick = onDown,
+                icon = "−"
+            )
+        }
+    }
+}
+
+@Composable
+private fun RockerAction(
+    contentDescription: String,
+    onClick: () -> Unit,
+    icon: String
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .clickable(onClick = onClick)
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(icon, color = remoteText(), fontSize = 13.sp)
+    }
+}
+
 @Composable
 private fun VerticalRocker(
     modifier: Modifier,
@@ -886,6 +960,30 @@ private fun RockerSegmentContainer(
     }
 }
 
+
+@Composable
+private fun CompactNavControl(
+    x: Int,
+    y: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .offset(x.dp, y.dp)
+            .size(36.dp)
+            .semantics { this.contentDescription = contentDescription },
+        color = remoteSurface2(),
+        shape = CircleShape,
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            content()
+        }
+    }
+}
+
 @Composable
 private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
@@ -930,7 +1028,7 @@ private fun StreamReferenceButton(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-            .size(74.dp, 40.dp)
+            .size(63.dp, 32.dp)
             .semantics { contentDescription = text.removePrefix("â¶ ").trim() },
         color = remoteSurface2(),
         shape = RoundedCornerShape(20.dp),
@@ -938,7 +1036,7 @@ private fun StreamReferenceButton(
     ) {
         Box(contentAlignment = Alignment.Center) {
             when {
-                text.contains("YouTube", ignoreCase = true) -> Row(verticalAlignment = Alignment.CenterVertically) {
+                text.equals("YouTube", ignoreCase = true) -> Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier
                             .size(14.dp, 10.dp)
@@ -948,7 +1046,8 @@ private fun StreamReferenceButton(
                     ) { Text("â¶", color = Color.White, fontSize = 6.sp) }
                     Text("YouTube", modifier = Modifier.padding(start = 2.dp), color = textColor, fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
                 }
-                text == "NETFLIX" -> Text("NETFLIX", color = Color(0xFFE50914), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                text == "NETFLIX" -> Text("NETFLIX", color = Color(0xFFE50914), fontSize = 7.5.sp, fontWeight = FontWeight.Bold)
+                text == "Disney+" -> Text("Disney+", color = Color(0xFF6B63D9), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                 else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("prime video", color = remoteText(), fontSize = 7.sp, fontWeight = FontWeight.SemiBold)
                     Canvas(
