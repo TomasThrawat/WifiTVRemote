@@ -1,0 +1,80 @@
+name: Real Device Android TV Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: ${{ secrets.AGENT_DEVICE_DAEMON_BASE_URL != '' || secrets.AGENT_DEVICE_CLOUD_BASE_URL != '' }}
+    runs-on: ubuntu-latest
+
+    env:
+      AGENT_DEVICE_PLATFORM: android
+      AGENT_DEVICE_SESSION: wifitvremote-${{ github.run_id }}
+      AGENT_DEVICE_DAEMON_BASE_URL: ${{ secrets.AGENT_DEVICE_DAEMON_BASE_URL }}
+      AGENT_DEVICE_DAEMON_AUTH_TOKEN: ${{ secrets.AGENT_DEVICE_DAEMON_AUTH_TOKEN }}
+      AGENT_DEVICE_CLOUD_BASE_URL: ${{ secrets.AGENT_DEVICE_CLOUD_BASE_URL }}
+      AGENT_DEVICE_ANDROID_DEVICE_ALLOWLIST: ${{ secrets.AGENT_DEVICE_ANDROID_DEVICE_ALLOWLIST }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6.3.0
+        with:
+          gradle-version: "9.6.0"
+          cache-read-only: true
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --no-daemon --warning-mode=all
+
+      - name: Verify debug APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: WifiTVRemote-real-device-debug-${{ github.run_id }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Install agent-device
+        run: npm install -g agent-device@latest
+
+      - name: Launch app on Android TV target
+        run: agent-device open com.tomasthrawat.wifitvremote --platform android --target tv
+
+      - name: Capture interactive UI snapshot
+        run: |
+          mkdir -p test-artifacts
+          agent-device snapshot -i | tee test-artifacts/ui-snapshot.txt
+
+      - name: Verify interactive controls exist
+        run: |
+          grep -Eiq 'button|dpad|remote|settings|disconnect' test-artifacts/ui-snapshot.txt
+
+      - name: Upload UI evidence
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: WifiTVRemote-agent-device-evidence-${{ github.run_id }}
+          path: test-artifacts/
+          if-no-files-found: error
+
+      - name: Shutdown agent-device session
+        if: always()
+        run: agent-device shutdown || true
