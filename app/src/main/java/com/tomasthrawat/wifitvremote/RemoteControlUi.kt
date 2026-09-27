@@ -7,12 +7,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +27,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,44 +41,42 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
+
+private val AppBlue = Color(0xFF1D6EFF)
+private const val DESIGN_WIDTH = 300f
+private const val DESIGN_HEIGHT = 595f
 
 @Composable
 private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF0D0F12) else Color(0xFFE7EAF2)
+    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFE8E7EA)
 
 @Composable
 private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF17191D) else Color(0xFFF8F9FC)
+    if (isSystemInDarkTheme()) Color(0xFF181818) else Color(0xFFF0F0F4)
 
 @Composable
 private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF23262B) else Color(0xFFFFFFFF)
+    if (isSystemInDarkTheme()) Color(0xFF141414) else Color(0xFFF8F8FA)
 
 @Composable
 private fun remoteText(): Color =
-    if (isSystemInDarkTheme()) Color(0xFFF5F5F7) else Color(0xFF17191D)
+    if (isSystemInDarkTheme()) Color(0xFFF4F4F4) else Color(0xFF151515)
 
 @Composable
 private fun remoteMuted(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF91959E) else Color(0xFF6D717A)
-
-@Composable
-private fun remoteGreen(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF25C77A) else Color(0xFF168B58)
+    if (isSystemInDarkTheme()) Color(0xFF9B9B9B) else Color(0xFF77777B)
 
 @Composable
 private fun remoteBorder(): Color =
-    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.10f)
-
-@Composable
-private fun remoteKeyTint(): Color =
-    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.045f) else Color.Black.copy(alpha = 0.035f)
-
-private val AppBlue = Color(0xFF1D6EFF)
+    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.08f)
 
 internal interface RemoteUiActions {
     fun setTextStateListener(listener: ((Boolean) -> Unit)?)
@@ -127,7 +126,7 @@ internal class TvRemoteUiActions(private val remote: TvRemote) : RemoteUiActions
     override fun pound() = remote.pound()
 }
 
-private enum class Destination { REMOTE, APPS, SETTINGS }
+private enum class Destination { REMOTE, APPS, CAST, SETTINGS }
 
 @Composable
 internal fun RemoteScreen(
@@ -136,544 +135,489 @@ internal fun RemoteScreen(
     onDisconnect: () -> Unit
 ) {
     var destination by rememberSaveable { mutableStateOf(Destination.REMOTE.name) }
-    var text by remember { mutableStateOf("") }
-    var textReady by remember { mutableStateOf(false) }
 
     DisposableEffect(remote) {
-        val callback = { ready: Boolean -> textReady = ready }
-        remote.setTextStateListener(callback)
+        remote.setTextStateListener { }
         onDispose { remote.setTextStateListener(null) }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = remoteBackground(),
-        bottomBar = {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(remoteBackground())
-                    .border(1.dp, remoteBorder()),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                BottomItem("Remote", destination == Destination.REMOTE.name) {
-                    destination = Destination.REMOTE.name
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(remoteBackground()),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        val scale = minOf(maxWidth.value / DESIGN_WIDTH, maxHeight.value / DESIGN_HEIGHT)
+        Box(
+            modifier = Modifier
+                .width(DESIGN_WIDTH.dp)
+                .height(DESIGN_HEIGHT.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    transformOrigin = TransformOrigin(0.5f, 0f)
                 }
-                BottomItem("Apps", destination == Destination.APPS.name) {
-                    destination = Destination.APPS.name
+        ) {
+            when (destination) {
+                Destination.REMOTE.name -> ReferenceRemoteLayout(
+                    remote = remote,
+                    status = status,
+                    onSetup = { destination = Destination.SETTINGS.name }
+                )
+                Destination.APPS.name -> ReferencePage {
+                    AppsPage(remote)
                 }
-                BottomItem("Settings", destination == Destination.SETTINGS.name) {
-                    destination = Destination.SETTINGS.name
+                Destination.CAST.name -> ReferencePage {
+                    CastPage()
+                }
+                Destination.SETTINGS.name -> ReferencePage {
+                    SettingsPage(status, onDisconnect)
                 }
             }
+
+            ReferenceBottomNav(
+                destination = destination,
+                onDestination = { destination = it.name }
+            )
         }
-    ) { padding ->
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(remoteBackground())
-                .then(Modifier)
+    }
+}
+
+@Composable
+private fun ReferenceRemoteLayout(
+    remote: RemoteUiActions,
+    status: String,
+    onSetup: () -> Unit
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(remoteBackground())
+    ) {
+        // Header: exact reference-space geometry, 300 x 595 design units.
+        ControlSurface(
+            x = 23, y = 30, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = remote::power
         ) {
+            Text("⏻", color = remoteText(), fontSize = 18.sp, textAlign = TextAlign.Center)
+        }
+
+        Column(
+            modifier = Modifier
+                .offset(75.dp, 29.dp)
+                .size(150.dp, 46.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text(
+                text = "Samsung Smart TV",
+                color = remoteText(),
+                fontSize = 15.sp,
+                lineHeight = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
             Box(
                 Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .background(remoteBackground())
-            ) {
-                when (destination) {
-                    Destination.REMOTE.name -> RemoteReferenceLayout(
-                        remote = remote,
-                        status = status,
-                        text = text,
-                        textReady = textReady,
-                        onTextChange = { text = it },
-                        onSend = {
-                            remote.sendText(text)
-                            text = ""
-                        },
-                        onDisconnect = onDisconnect,
-                        onSetup = { destination = Destination.SETTINGS.name }
-                    )
-                    Destination.APPS.name -> AppsPage(remote)
-                    Destination.SETTINGS.name -> SettingsPage(status, onDisconnect)
-                }
-            }
+                    .padding(top = 1.dp)
+                    .size(5.dp)
+                    .clip(CircleShape)
+                    .background(if (status == "متصل" || status == "Connected") Color(0xFF4ED17B) else remoteMuted())
+            )
+        }
+
+        ControlSurface(
+            x = 231, y = 30, w = 46, h = 46,
+            radius = 23, color = remoteSurface2(),
+            onClick = remote::input
+        ) {
+            Text("⌁", color = remoteText(), fontSize = 18.sp)
+        }
+
+        ReferenceTextButton(
+            text = "SETUP",
+            x = 22, y = 101, w = 52, h = 24,
+            onClick = onSetup
+        )
+        ReferenceTextButton(
+            text = "SOURCE",
+            x = 224, y = 101, w = 54, h = 24,
+            onClick = remote::input
+        )
+
+        DPadReference(remote, Modifier.offset(72.dp, 109.dp))
+
+        ReferenceTextButton(
+            text = "EXIT",
+            x = 23, y = 239, w = 46, h = 46,
+            fill = true,
+            onClick = remote::back
+        )
+        ReferenceTextButton(
+            text = "CH-LIST",
+            x = 230, y = 239, w = 47, h = 46,
+            fill = true,
+            onClick = remote::menu
+        )
+
+        Row(
+            modifier = Modifier
+                .offset(93.dp, 279.dp)
+                .size(114.dp, 33.dp),
+            horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            MiniGlyphButton("‹", remote::back)
+            MiniGlyphButton("⌂", remote::home)
+            MiniGlyphButton("123", { })
+        }
+
+        VerticalRocker(
+            modifier = Modifier.offset(45.dp, 327.dp),
+            label = "VOL",
+            top = "+",
+            middle = "●",
+            bottom = "−",
+            onTop = remote::volumeUp,
+            onMiddle = remote::mute,
+            onBottom = remote::volumeDown
+        )
+
+        VerticalRocker(
+            modifier = Modifier.offset(209.dp, 327.dp),
+            label = "CH",
+            top = "+",
+            middle = "•",
+            bottom = "−",
+            onTop = remote::channelUp,
+            onMiddle = remote::menu,
+            onBottom = remote::channelDown
+        )
+
+        MiniControl(
+            x = 100, y = 327, label = "≡", onClick = remote::menu
+        )
+        MiniControl(
+            x = 154, y = 327, label = "i", onClick = remote::input
+        )
+        WideControl(
+            x = 100, y = 382, label = "MUTE", onClick = remote::mute
+        )
+
+        Row(
+            modifier = Modifier
+                .offset(30.dp, 465.dp)
+                .size(244.dp, 40.dp),
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            StreamReferenceButton(
+                text = "▶ YouTube",
+                textColor = Color(0xFFFF3333),
+                onClick = { remote.launchAppLink("https://www.youtube.com/") }
+            )
+            StreamReferenceButton(
+                text = "NETFLIX",
+                textColor = Color(0xFFE50914),
+                onClick = { remote.launchAppLink("https://www.netflix.com/") }
+            )
+            StreamReferenceButton(
+                text = "prime video",
+                textColor = remoteText(),
+                onClick = { remote.launchAppLink("https://www.primevideo.com/") }
+            )
         }
     }
 }
 
 @Composable
-private fun BottomItem(
-    label: String,
-    selected: Boolean,
+private fun ReferenceTextButton(
+    text: String,
+    x: Int,
+    y: Int,
+    w: Int,
+    h: Int,
+    fill: Boolean = false,
     onClick: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = Modifier
-            .width(100.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .height(46.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            Modifier
-                .width(24.dp)
-                .height(3.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(if (selected) AppBlue else Color.Transparent)
-        )
-        Text(
-            label,
-            color = if (selected) remoteText() else remoteMuted(),
-            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-        )
-    }
-}
-
-@Composable
-private fun CompactButton(
-    label: String,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(30.dp),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, remoteBorder()),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = remoteText()),
-        contentPadding = PaddingValues(horizontal = 6.dp)
+            .offset(x.dp, y.dp)
+            .size(w.dp, h.dp)
+            .clip(RoundedCornerShape(if (fill) 9.dp else 4.dp))
+            .background(if (fill) remoteSurface2() else Color.Transparent)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            label,
-            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+            text = text,
+            color = remoteText(),
+            fontSize = if (text == "CH-LIST") 8.sp else 9.sp,
+            fontWeight = FontWeight.Medium,
             maxLines = 1
         )
     }
 }
 
 @Composable
-private fun RemoteReferenceLayout(
-    remote: RemoteUiActions,
-    status: String,
-    text: String,
-    textReady: Boolean,
-    onTextChange: (String) -> Unit,
-    onSend: () -> Unit,
-    onDisconnect: () -> Unit,
-    onSetup: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(remoteBackground())
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(43.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DecorativeHeaderButton("⏻")
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(1.dp)
-            ) {
-                Text(
-                    "Samsung Smart TV",
-                    color = remoteText(),
-                    style = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Box(
-                        Modifier
-                            .size(5.dp)
-                            .clip(CircleShape)
-                            .background(remoteGreen())
-                    )
-                    Text(
-                        if (status == "متصل") "Connected" else status,
-                        color = remoteGreen(),
-                        style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                        maxLines = 1
-                    )
-                }
-            }
-            DecorativeHeaderButton("◖")
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(30.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            CompactButton("SETUP", Modifier.weight(1f), onSetup)
-            CompactButton("SOURCE", Modifier.weight(1f), remote::input)
-            CompactButton("EXIT", Modifier.weight(1f), remote::back)
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(154.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            VolumeRocker(remote, Modifier.size(width = 50.dp, height = 148.dp))
-            DPad(remote, Modifier.size(150.dp))
-            ChannelCluster(remote, Modifier.width(54.dp))
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(31.dp),
-            horizontalArrangement = Arrangement.spacedBy(7.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            SmallCircleButton("↶", remote::back)
-            SmallCircleButton("⌂", remote::home)
-            SmallCircleButton("⋯", remote::menu)
-        }
-
-        NumberPad(
-            remote = remote,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .height(182.dp)
-        )
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            color = remoteSurface(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.padding(start = 7.dp, end = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    modifier = Modifier.weight(1f),
-                    enabled = textReady,
-                    singleLine = true,
-                    placeholder = {
-                        Text("Type on TV", color = remoteMuted())
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = remoteText(),
-                        unfocusedTextColor = remoteText(),
-                        focusedBorderColor = AppBlue,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledBorderColor = Color.Transparent
-                    )
-                )
-                TextButton(
-                    onClick = onSend,
-                    enabled = textReady && text.isNotEmpty()
-                ) {
-                    Text("Send", color = if (textReady) AppBlue else remoteMuted())
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(33.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            StreamButton("NETFLIX", Modifier.weight(1f)) {
-                remote.launchAppLink("https://www.netflix.com/")
-            }
-            StreamButton("YouTube", Modifier.weight(1f)) {
-                remote.launchAppLink("https://www.youtube.com/")
-            }
-            StreamButton("prime video", Modifier.weight(1f)) {
-                remote.launchAppLink("https://www.primevideo.com/")
-            }
-        }
-    }
-}
-
-@Composable
-private fun DecorativeHeaderButton(label: String) {
-    Surface(
-        modifier = Modifier.size(30.dp),
-        color = remoteSurface2(),
-        shape = CircleShape
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                color = remoteText(),
-                style = androidx.compose.material3.MaterialTheme.typography.labelMedium
-            )
-        }
-    }
-}
-
-@Composable
-private fun VolumeRocker(
-    remote: RemoteUiActions,
-    modifier: Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(25.dp))
-            .background(remoteSurface())
-            .border(1.dp, remoteBorder(), RoundedCornerShape(25.dp)),
-        verticalArrangement = Arrangement.Center
-    ) {
-        RockerButton("+", remote::volumeUp, Modifier.weight(1f))
-        RockerButton("●", remote::mute, Modifier.weight(1f))
-        RockerButton("−", remote::volumeDown, Modifier.weight(1f))
-    }
-}
-
-@Composable
-private fun RockerButton(
-    label: String,
+private fun ControlSurface(
+    x: Int,
+    y: Int,
+    w: Int,
+    h: Int,
+    radius: Int,
+    color: Color,
     onClick: () -> Unit,
-    modifier: Modifier
+    content: @Composable () -> Unit
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = Color.Transparent,
-        onClick = onClick
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                color = remoteText(),
-                style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-@Composable
-private fun ChannelCluster(
-    remote: RemoteUiActions,
-    modifier: Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        RemoteSideButton("CH-LIST", remote::menu)
-        RemoteSideButton("CH+", remote::channelUp)
-        RemoteSideButton("CH−", remote::channelDown)
-    }
-}
-
-@Composable
-private fun RemoteSideButton(label: String, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
-            .fillMaxWidth()
-            .height(38.dp),
-        color = remoteSurface2(),
-        shape = RoundedCornerShape(9.dp),
+            .offset(x.dp, y.dp)
+            .size(w.dp, h.dp),
+        color = color,
+        shape = RoundedCornerShape(radius.dp),
         onClick = onClick
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                color = remoteText(),
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall
-            )
-        }
+        Box(contentAlignment = Alignment.Center) { content() }
     }
 }
 
 @Composable
-private fun SmallCircleButton(
-    label: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.size(31.dp),
-        color = remoteSurface2(),
-        shape = CircleShape,
-        onClick = onClick
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(
-                label,
-                color = remoteText(),
-                style = androidx.compose.material3.MaterialTheme.typography.labelSmall
-            )
-        }
-    }
-}
-
-@Composable
-private fun DPad(
-    remote: RemoteUiActions,
-    modifier: Modifier
-) {
+private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
     Box(
         modifier
+            .size(156.dp)
             .clip(CircleShape)
             .background(remoteSurface())
-            .border(1.dp, remoteBorder(), CircleShape),
-        contentAlignment = Alignment.Center
+            .border(1.dp, remoteBorder(), CircleShape)
     ) {
-        DPadKey(Modifier.align(Alignment.TopCenter), "▲", remote::up)
-        DPadKey(Modifier.align(Alignment.CenterStart), "◀", remote::left)
-        DPadKey(Modifier.align(Alignment.CenterEnd), "▶", remote::right)
-        DPadKey(Modifier.align(Alignment.BottomCenter), "▼", remote::down)
+        DPadKeyReference(Modifier.offset(55.dp, 7.dp), "▲", remote::up)
+        DPadKeyReference(Modifier.offset(7.dp, 55.dp), "◀", remote::left)
+        DPadKeyReference(Modifier.offset(109.dp, 55.dp), "▶", remote::right)
+        DPadKeyReference(Modifier.offset(55.dp, 109.dp), "▼", remote::down)
         Surface(
-            modifier = Modifier.size(58.dp),
-            color = AppBlue,
+            modifier = Modifier
+                .offset(49.dp, 49.dp)
+                .size(58.dp),
+            color = remoteSurface2(),
             shape = CircleShape,
             onClick = remote::ok
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text("OK", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("OK", color = remoteText(), fontSize = 9.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-private fun DPadKey(
-    modifier: Modifier,
-    label: String,
-    onClick: () -> Unit
-) {
+private fun DPadKeyReference(modifier: Modifier, text: String, onClick: () -> Unit) {
     Surface(
-        modifier = modifier.size(40.dp),
-        color = remoteKeyTint(),
+        modifier = modifier.size(46.dp),
+        color = Color.Transparent,
         shape = CircleShape,
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(label, color = remoteText())
+            Text(text, color = remoteText(), fontSize = 15.sp)
         }
     }
 }
 
 @Composable
-private fun NumberPad(
-    remote: RemoteUiActions,
-    modifier: Modifier
-) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        listOf(
-            listOf("1", "2", "3"),
-            listOf("4", "5", "6"),
-            listOf("7", "8", "9"),
-            listOf("*", "0", "#")
-        ).forEach { row ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                row.forEach { digit ->
-                    NumberKey(
-                        digit,
-                        Modifier.weight(1f),
-                        onClick = {
-                            when (digit) {
-                                "*" -> remote.star()
-                                "#" -> remote.pound()
-                                else -> remote.number(digit.toInt())
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NumberKey(
-    digit: String,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
+private fun MiniGlyphButton(text: String, onClick: () -> Unit) {
     Surface(
-        modifier = modifier,
-        color = remoteSurface(),
-        shape = RoundedCornerShape(9.dp),
+        modifier = Modifier.size(33.dp),
+        color = remoteSurface2(),
+        shape = CircleShape,
         onClick = onClick
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                digit,
+                text,
                 color = remoteText(),
-                style = androidx.compose.material3.MaterialTheme.typography.titleSmall
+                fontSize = if (text == "123") 8.sp else 15.sp,
+                fontWeight = if (text == "123") FontWeight.SemiBold else FontWeight.Normal
             )
         }
     }
 }
 
 @Composable
-private fun StreamButton(label: String, modifier: Modifier, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(33.dp),
-        shape = RoundedCornerShape(9.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = remoteSurface2(),
-            contentColor = remoteText()
-        ),
-        contentPadding = PaddingValues(horizontal = 5.dp)
+private fun VerticalRocker(
+    modifier: Modifier,
+    label: String,
+    top: String,
+    middle: String,
+    bottom: String,
+    onTop: () -> Unit,
+    onMiddle: () -> Unit,
+    onBottom: () -> Unit
+) {
+    Column(
+        modifier
+            .size(46.dp, 101.dp)
+            .clip(RoundedCornerShape(23.dp))
+            .background(remoteSurface2())
+            .border(1.dp, remoteBorder(), RoundedCornerShape(23.dp)),
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
+        RockerGlyph(top, onTop)
+        RockerGlyph(middle, onMiddle)
+        RockerGlyph(bottom, onBottom)
         Text(
             label,
-            style = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-            maxLines = 1
+            modifier = Modifier.fillMaxWidth(),
+            color = remoteMuted(),
+            textAlign = TextAlign.Center,
+            fontSize = 7.sp,
+            fontWeight = FontWeight.SemiBold
         )
     }
+}
+
+@Composable
+private fun RockerGlyph(text: String, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(23.dp)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, color = remoteText(), fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
+    ControlSurface(
+        x = x, y = y, w = 46, h = 46, radius = 10,
+        color = remoteSurface2(), onClick = onClick
+    ) {
+        Text(label, color = remoteText(), fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
+    ControlSurface(
+        x = x, y = y, w = 101, h = 46, radius = 10,
+        color = remoteSurface2(), onClick = onClick
+    ) {
+        Text(label, color = remoteMuted(), fontSize = 8.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun StreamReferenceButton(
+    text: String,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.weight(1f),
+        color = remoteSurface2(),
+        shape = RoundedCornerShape(9.dp),
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = text,
+                color = textColor,
+                fontSize = 8.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReferenceBottomNav(
+    destination: String,
+    onDestination: (Destination) -> Unit
+) {
+    val items = listOf(
+        Triple(Destination.REMOTE, "⌁", "Remote"),
+        Triple(Destination.APPS, "▦", "Apps"),
+        Triple(Destination.CAST, "◒", "Cast"),
+        Triple(Destination.SETTINGS, "⚙", "Settings")
+    )
+    Row(
+        modifier = Modifier
+            .offset(16.dp, 519.dp)
+            .size(269.dp, 76.dp)
+            .background(remoteBackground()),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.Top
+    ) {
+        items.forEach { (item, icon, label) ->
+            Column(
+                modifier = Modifier
+                    .width(61.dp)
+                    .height(76.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onDestination(item) },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
+                Box(
+                    Modifier
+                        .padding(top = 7.dp)
+                        .size(23.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        icon,
+                        color = if (destination == item.name) remoteText() else remoteMuted(),
+                        fontSize = 13.sp
+                    )
+                }
+                if (destination == item.name) {
+                    Box(
+                        Modifier
+                            .padding(top = 1.dp)
+                            .width(18.dp)
+                            .height(2.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(remoteText())
+                    )
+                } else {
+                    Box(Modifier.height(2.dp))
+                }
+                Text(
+                    label,
+                    color = if (destination == item.name) remoteText() else remoteMuted(),
+                    fontSize = 7.sp,
+                    fontWeight = if (destination == item.name) FontWeight.SemiBold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReferencePage(content: @Composable () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(remoteBackground())
+            .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 78.dp)
+    ) { content() }
 }
 
 @Composable
 private fun AppsPage(remote: RemoteUiActions) {
     Column(
-        Modifier
-            .fillMaxSize()
-            .background(remoteBackground())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            "Apps",
-            color = remoteText(),
-            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Apps", color = remoteText(), fontSize = 23.sp, fontWeight = FontWeight.Bold)
         Text(
             "Launch supported TV app links.",
             color = remoteMuted(),
-            style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+            fontSize = 10.sp
         )
         listOf(
             "YouTube" to "https://www.youtube.com/",
@@ -682,64 +626,61 @@ private fun AppsPage(remote: RemoteUiActions) {
         ).forEach { (name, link) ->
             Button(
                 onClick = { remote.launchAppLink(link) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp),
+                modifier = Modifier.fillMaxWidth().height(42.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = remoteSurface(),
                     contentColor = remoteText()
                 )
             ) {
-                Text(name)
+                Text(name, fontSize = 11.sp)
             }
         }
     }
 }
 
 @Composable
+private fun CastPage() {
+    Column(
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Cast", color = remoteText(), fontSize = 23.sp, fontWeight = FontWeight.Bold)
+        Text(
+            "Cast control surface.",
+            color = remoteMuted(),
+            fontSize = 10.sp
+        )
+    }
+}
+
+@Composable
 private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
     Column(
-        Modifier
-            .fillMaxSize()
-            .background(remoteBackground())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            "Settings",
-            color = remoteText(),
-            style = androidx.compose.material3.MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Settings", color = remoteText(), fontSize = 23.sp, fontWeight = FontWeight.Bold)
         Card(
-            Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = remoteSurface()),
             shape = RoundedCornerShape(14.dp)
         ) {
             Column(
-                Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold)
-                Text(status, color = remoteGreen())
-                Text(
-                    "Remote controls use the authenticated TV connection.",
-                    color = remoteMuted(),
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
-                )
+                Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                Text(status, color = if (status == "متصل") Color(0xFF4ED17B) else remoteMuted(), fontSize = 10.sp)
             }
         }
         OutlinedButton(
             onClick = onDisconnect,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(46.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = remoteText()),
-            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f))
+            modifier = Modifier.fillMaxWidth().height(42.dp),
+            border = BorderStroke(1.dp, remoteBorder()),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Text("Disconnect TV")
+            Text("Disconnect TV", fontSize = 10.sp)
         }
     }
 }
