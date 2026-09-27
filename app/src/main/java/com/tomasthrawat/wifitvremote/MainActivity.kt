@@ -86,13 +86,13 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     val context = LocalContext.current
     val isBrowserStackPreview =
         (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
-            Build.MODEL.contains("Pixel 8", ignoreCase = true)
+            Build.MODEL.contains("Pixel", ignoreCase = true)
 
     if (isBrowserStackPreview) {
         val previewRemote = remember { PreviewRemoteActions() }
         RemoteScreen(
             remote = previewRemote,
-            status = "متصل",
+            status = "ÙØªØµÙ",
             onDisconnect = {}
         )
         return
@@ -108,7 +108,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     var showRemote by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var codeRequested by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("Wi‑Fi فقط • جاهز للبحث") }
+    var status by remember { mutableStateOf("WiâFi ÙÙØ· â¢ Ø¬Ø§ÙØ² ÙÙØ¨Ø­Ø«") }
     var scanJob by remember { mutableStateOf<Job?>(null) }
     var scanGeneration by remember { mutableIntStateOf(0) }
     var attemptGeneration by remember { mutableIntStateOf(0) }
@@ -131,20 +131,20 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         val thisScan = scanGeneration
         scanJob = null
         devices.clear()
-        status = "جاري البحث..."
+        status = "Ø¬Ø§Ø±Ù Ø§ÙØ¨Ø­Ø«..."
 
         scanJob = scope.launch {
             discovery.scan().collect { device ->
                 if (thisScan == scanGeneration && devices.none { it.host == device.host }) {
                     devices.add(device)
-                    status = "تم العثور على ${devices.size} جهاز"
+                    status = "ØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ ${devices.size} Ø¬ÙØ§Ø²"
                 }
             }
             if (thisScan == scanGeneration) {
                 status = if (devices.isEmpty()) {
-                    "لم يتم العثور على أجهزة"
+                    "ÙÙ ÙØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ Ø£Ø¬ÙØ²Ø©"
                 } else {
-                    "تم العثور على ${devices.size} جهاز"
+                    "ØªÙ Ø§ÙØ¹Ø«ÙØ± Ø¹ÙÙ ${devices.size} Ø¬ÙØ§Ø²"
                 }
                 scanJob = null
             }
@@ -158,7 +158,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         stopCurrentConnection()
 
         val token = attemptGeneration
-        status = "جاري الاتصال بـ ${device.name}..."
+        status = "Ø¬Ø§Ø±Ù Ø§ÙØ§ØªØµØ§Ù Ø¨Ù ${device.name}..."
         code = ""
         codeRequested = false
 
@@ -169,14 +169,14 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             onCode = {
                 if (token == attemptGeneration && pairing === p) {
                     codeRequested = true
-                    status = "أدخل رمز الاقتران الظاهر على التلفزيون."
+                    status = "Ø£Ø¯Ø®Ù Ø±ÙØ² Ø§ÙØ§ÙØªØ±Ø§Ù Ø§ÙØ¸Ø§ÙØ± Ø¹ÙÙ Ø§ÙØªÙÙØ²ÙÙÙ."
                 }
             },
             onPaired = { identity ->
                 if (token == attemptGeneration && pairing === p) {
                     pairing = null
                     p.stop()
-                    status = "تم الاقتران. جاري الاتصال..."
+                    status = "ØªÙ Ø§ÙØ§ÙØªØ±Ø§Ù. Ø¬Ø§Ø±Ù Ø§ÙØ§ØªØµØ§Ù..."
 
                     lateinit var r: TvRemote
                     r = TvRemote(
@@ -187,7 +187,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 connected = true
                                 pairing = null
                                 codeRequested = false
-                                status = "متصل"
+                                status = "ÙØªØµÙ"
                                 showRemote = true
                             }
                         },
@@ -197,7 +197,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 remote = null
                                 connected = false
                                 showRemote = false
-                                status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
+                                status = "Ø®Ø·Ø£: " + (error.message ?: error.javaClass.simpleName)
                             }
                         }
                     )
@@ -210,7 +210,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     p.stop()
                     pairing = null
                     codeRequested = false
-                    status = "خطأ: " + (error.message ?: error.javaClass.simpleName)
+                    status = "Ø®Ø·Ø£: " + (error.message ?: error.javaClass.simpleName)
                 }
             }
         )
@@ -240,7 +240,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             status = status,
             onDisconnect = {
                 stopCurrentConnection()
-                status = "تم فصل الاتصال"
+                status = "ØªÙ ÙØµÙ Ø§ÙØ§ØªØµØ§Ù"
             }
         )
     } else {
@@ -261,9 +261,9 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     val success = currentPairing.submitCode(submittedCode)
                     if (token == attemptGeneration && pairing === currentPairing) {
                         status = if (success) {
-                            "تم إرسال الرمز. انتظار التلفزيون..."
+                            "ØªÙ Ø¥Ø±Ø³Ø§Ù Ø§ÙØ±ÙØ². Ø§ÙØªØ¸Ø§Ø± Ø§ÙØªÙÙØ²ÙÙÙ..."
                         } else {
-                            "تعذر إرسال الرمز. تأكد من إدخال الرمز السداسي الصحيح."
+                            "ØªØ¹Ø°Ø± Ø¥Ø±Ø³Ø§Ù Ø§ÙØ±ÙØ². ØªØ£ÙØ¯ ÙÙ Ø¥Ø¯Ø®Ø§Ù Ø§ÙØ±ÙØ² Ø§ÙØ³Ø¯Ø§Ø³Ù Ø§ÙØµØ­ÙØ­."
                         }
                     }
                 }
@@ -290,8 +290,8 @@ private fun ConnectionScreen(
             TopAppBar(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("الاتصال", style = MaterialTheme.typography.titleLarge)
-                        Text("Wi‑Fi TV Remote", style = MaterialTheme.typography.labelMedium)
+                        Text("Ø§ÙØ§ØªØµØ§Ù", style = MaterialTheme.typography.titleLarge)
+                        Text("WiâFi TV Remote", style = MaterialTheme.typography.labelMedium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -325,13 +325,13 @@ private fun ConnectionScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                 ) {
-                    Text("البحث عن أجهزة التلفزيون")
+                    Text("Ø§ÙØ¨Ø­Ø« Ø¹Ù Ø£Ø¬ÙØ²Ø© Ø§ÙØªÙÙØ²ÙÙÙ")
                 }
             }
 
             if (devices.isNotEmpty()) {
                 item {
-                    Text("الأجهزة القريبة", style = MaterialTheme.typography.titleMedium)
+                    Text("Ø§ÙØ£Ø¬ÙØ²Ø© Ø§ÙÙØ±ÙØ¨Ø©", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -365,7 +365,7 @@ private fun ConnectionScreen(
                             onClick = { onConnect(device) },
                             modifier = Modifier.heightIn(min = 48.dp)
                         ) {
-                            Text("اتصال")
+                            Text("Ø§ØªØµØ§Ù")
                         }
                     }
                 }
@@ -384,15 +384,15 @@ private fun ConnectionScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("إقران التلفزيون", style = MaterialTheme.typography.titleMedium)
+                            Text("Ø¥ÙØ±Ø§Ù Ø§ÙØªÙÙØ²ÙÙÙ", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "أدخل الرمز الظاهر على شاشة التلفزيون.",
+                                "Ø£Ø¯Ø®Ù Ø§ÙØ±ÙØ² Ø§ÙØ¸Ø§ÙØ± Ø¹ÙÙ Ø´Ø§Ø´Ø© Ø§ÙØªÙÙØ²ÙÙÙ.",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             OutlinedTextField(
                                 value = code,
                                 onValueChange = onCodeChange,
-                                label = { Text("رمز الاقتران") },
+                                label = { Text("Ø±ÙØ² Ø§ÙØ§ÙØªØ±Ø§Ù") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                                 modifier = Modifier.fillMaxWidth()
@@ -403,7 +403,7 @@ private fun ConnectionScreen(
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
                             ) {
-                                Text("تأكيد الرمز")
+                                Text("ØªØ£ÙÙØ¯ Ø§ÙØ±ÙØ²")
                             }
                         }
                     }
