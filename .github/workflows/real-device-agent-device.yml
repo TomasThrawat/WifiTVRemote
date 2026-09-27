@@ -8,18 +8,25 @@ permissions:
 
 jobs:
   smoke:
-    if: ${{ secrets.AGENT_DEVICE_DAEMON_BASE_URL != '' || secrets.AGENT_DEVICE_CLOUD_BASE_URL != '' }}
     runs-on: ubuntu-latest
 
     env:
       AGENT_DEVICE_PLATFORM: android
       AGENT_DEVICE_SESSION: wifitvremote-${{ github.run_id }}
+      AGENT_DEVICE_SESSION_LOCK: ${{ github.run_id }}
       AGENT_DEVICE_DAEMON_BASE_URL: ${{ secrets.AGENT_DEVICE_DAEMON_BASE_URL }}
       AGENT_DEVICE_DAEMON_AUTH_TOKEN: ${{ secrets.AGENT_DEVICE_DAEMON_AUTH_TOKEN }}
       AGENT_DEVICE_CLOUD_BASE_URL: ${{ secrets.AGENT_DEVICE_CLOUD_BASE_URL }}
       AGENT_DEVICE_ANDROID_DEVICE_ALLOWLIST: ${{ secrets.AGENT_DEVICE_ANDROID_DEVICE_ALLOWLIST }}
 
     steps:
+      - name: Validate real-device connection
+        run: |
+          if [ -z "$AGENT_DEVICE_DAEMON_BASE_URL" ] && [ -z "$AGENT_DEVICE_CLOUD_BASE_URL" ]; then
+            echo "::error::Configure AGENT_DEVICE_DAEMON_BASE_URL or AGENT_DEVICE_CLOUD_BASE_URL in GitHub Actions secrets before running this workflow."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v7.0.1
 
