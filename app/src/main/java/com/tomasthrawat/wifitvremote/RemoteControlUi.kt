@@ -227,8 +227,8 @@ private fun ReferenceRemoteLayout(
 
         DPadReference(remote, Modifier.offset(72.dp, 133.dp))
 
-        ReferenceTextButton("EXIT", 23, 243, 46, 46, true, remote::back)
-        ReferenceTextButton("CH-LIST", 230, 243, 47, 46, true, remote::menu)
+        ReferenceTextButton("EXIT", 24, 243, 45, 46, true, remote::back)
+        ReferenceTextButton("CH-LIST", 231, 243, 45, 46, true, remote::menu)
 
         Row(
             modifier = Modifier
