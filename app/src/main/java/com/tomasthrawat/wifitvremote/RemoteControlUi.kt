@@ -1,5 +1,6 @@
 package com.tomasthrawat.wifitvremote
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -197,6 +198,10 @@ private fun ReferenceRemoteLayout(
     onSetup: () -> Unit
 ) {
     var numberPadOpen by rememberSaveable { mutableStateOf(false) }
+
+    BackHandler(enabled = numberPadOpen) {
+        numberPadOpen = false
+    }
 
     Box(
         Modifier
@@ -632,7 +637,7 @@ private fun NumberPadOverlay(
         Surface(
             modifier = Modifier
                 .offset(55.dp, 275.dp)
-                .size(190.dp, 250.dp)
+                .size(190.dp, 260.dp)
                 .clickable(onClick = { })
                 .semantics { contentDescription = "Numeric keypad panel" },
             color = remoteSurface(),
