@@ -60,7 +60,7 @@ private const val DESIGN_HEIGHT = 619f
 
 @Composable
 private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFEBEAEF)
+    if (isSystemInDarkTheme()) Color(0xFF000000) else Color(0xFFE7EAF2)
 
 @Composable
 private fun remoteSurface(): Color =
@@ -98,6 +98,7 @@ internal interface RemoteUiActions {
     fun left()
     fun right()
     fun ok()
+    fun playPause()
     fun volumeUp()
     fun volumeDown()
     fun mute()
@@ -122,6 +123,7 @@ internal class TvRemoteUiActions(private val remote: TvRemote) : RemoteUiActions
     override fun left() = remote.left()
     override fun right() = remote.right()
     override fun ok() = remote.ok()
+    override fun playPause() = remote.playPause()
     override fun volumeUp() = remote.volumeUp()
     override fun volumeDown() = remote.volumeDown()
     override fun mute() = remote.mute()
@@ -211,7 +213,8 @@ private fun ReferenceRemoteLayout(
         ControlSurface(
             x = 23, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
-            onClick = remote::power
+            onClick = remote::power,
+            contentDescription = "Power"
         ) {
             ReferenceGlyph(Glyph.POWER, remoteText(), Modifier.size(22.dp))
         }
@@ -251,7 +254,8 @@ private fun ReferenceRemoteLayout(
         ControlSurface(
             x = 231, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
-            onClick = remote::input
+            onClick = remote::mute,
+            contentDescription = "Mute"
         ) {
             ReferenceGlyph(Glyph.SPEAKER, remoteText(), Modifier.size(22.dp))
         }
@@ -293,7 +297,7 @@ private fun ReferenceRemoteLayout(
         )
 
         MiniControl(RemoteUiSpec.homeX, 351, "HOME", remote::home)
-        MiniControl(RemoteUiSpec.playX, 351, "PLAY", remote::ok)
+        MiniControl(RemoteUiSpec.playX, 351, "PLAY", remote::playPause)
         WideControl(100, 406, "BACK", remote::back)
 
         StreamReferenceButton(
@@ -432,7 +436,7 @@ private fun DPadKeyReference(modifier: Modifier, text: String, onClick: () -> Un
     }
 }
 
-private enum class Glyph { POWER, REMOTE, APPS, CAST, SETTINGS, SPEAKER, PLAY_PAUSE, BACK }
+private enum class Glyph { POWER, REMOTE, HOME, APPS, CAST, SETTINGS, SPEAKER, PLAY_PAUSE, BACK }
 
 @Composable
 private fun ReferenceGlyph(kind: Glyph, tint: Color, modifier: Modifier) {
@@ -451,6 +455,27 @@ private fun ReferenceGlyph(kind: Glyph, tint: Color, modifier: Modifier) {
                     androidx.compose.ui.geometry.Offset(cx, size.height * 0.08f),
                     androidx.compose.ui.geometry.Offset(cx, size.height * 0.46f),
                     strokeWidth = stroke, cap = StrokeCap.Round
+                )
+            }
+            Glyph.HOME -> {
+                val left = size.width * 0.18f
+                val right = size.width * 0.82f
+                val roofY = size.height * 0.40f
+                val baseY = size.height * 0.78f
+                val midX = size.width * 0.50f
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(left, roofY)
+                    lineTo(midX, size.height * 0.14f)
+                    lineTo(right, roofY)
+                    lineTo(right, baseY)
+                    lineTo(left, baseY)
+                    close()
+                }
+                drawPath(
+                    p, tint,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        stroke, cap = StrokeCap.Round, join = StrokeJoin.Round
+                    )
                 )
             }
             Glyph.REMOTE -> {
@@ -874,7 +899,7 @@ private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
         contentDescription = label
     ) {
         when (label) {
-            "HOME" -> ReferenceGlyph(Glyph.REMOTE, remoteText(), Modifier.size(18.dp))
+            "HOME" -> ReferenceGlyph(Glyph.HOME, remoteText(), Modifier.size(18.dp))
             "PLAY" -> ReferenceGlyph(Glyph.PLAY_PAUSE, remoteText(), Modifier.size(18.dp))
             else -> Text(label, color = remoteText(), fontSize = 13.sp)
         }
@@ -884,7 +909,7 @@ private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
 @Composable
 private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
-        x, y, 101, 46, 23, remoteSurface2(), onClick
+        x, y, 101, 46, 23, remoteSurface2(), onClick, contentDescription = label
     ) {
         if (label == "BACK") {
             ReferenceGlyph(Glyph.BACK, remoteText(), Modifier.size(22.dp))
@@ -905,7 +930,8 @@ private fun StreamReferenceButton(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-            .size(74.dp, 40.dp),
+            .size(74.dp, 40.dp)
+            .semantics { contentDescription = text.removePrefix("▶ ").trim() },
         color = remoteSurface2(),
         shape = RoundedCornerShape(20.dp),
         onClick = onClick
@@ -920,7 +946,7 @@ private fun StreamReferenceButton(
                             .background(Color(0xFFFF0000)),
                         contentAlignment = Alignment.Center
                     ) { Text("▶", color = Color.White, fontSize = 6.sp) }
-                    Text("YouTube", modifier = Modifier.padding(start = 2.dp), color = remoteText(), fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
+                    Text("YouTube", modifier = Modifier.padding(start = 2.dp), color = textColor, fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
                 }
                 text == "NETFLIX" -> Text("NETFLIX", color = Color(0xFFE50914), fontSize = 8.sp, fontWeight = FontWeight.Bold)
                 else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -973,7 +999,8 @@ private fun ReferenceBottomNav(
                     .width(40.dp)
                     .height(76.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .clickable { onDestination(item) },
+                    .clickable { onDestination(item) }
+                    .semantics { contentDescription = label },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(

@@ -67,6 +67,7 @@ private class PreviewRemoteActions : RemoteUiActions {
     override fun left() = Unit
     override fun right() = Unit
     override fun ok() = Unit
+    override fun playPause() = Unit
     override fun volumeUp() = Unit
     override fun volumeDown() = Unit
     override fun mute() = Unit
