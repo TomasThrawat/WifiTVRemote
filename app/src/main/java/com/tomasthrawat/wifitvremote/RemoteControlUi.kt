@@ -387,6 +387,141 @@ private fun DPadKeyReference(modifier: Modifier, text: String, onClick: () -> Un
     }
 }
 
+private enum class Glyph { POWER, REMOTE, APPS, CAST, SETTINGS, SPEAKER, PLAY_PAUSE, BACK }
+
+@Composable
+private fun ReferenceGlyph(kind: Glyph, tint: Color, modifier: Modifier) {
+    Canvas(modifier) {
+        val stroke = (size.minDimension * 0.075f).coerceAtLeast(1.3f)
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        when (kind) {
+            Glyph.POWER -> {
+                drawArc(
+                    color = tint, startAngle = -45f, sweepAngle = 270f, useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round)
+                )
+                drawLine(
+                    tint,
+                    androidx.compose.ui.geometry.Offset(cx, size.height * 0.08f),
+                    androidx.compose.ui.geometry.Offset(cx, size.height * 0.46f),
+                    strokeWidth = stroke, cap = StrokeCap.Round
+                )
+            }
+            Glyph.REMOTE -> {
+                val w = size.width * 0.46f
+                val h = size.height * 0.78f
+                val l = (size.width - w) / 2f
+                val t = (size.height - h) / 2f
+                drawRoundRect(
+                    tint,
+                    topLeft = androidx.compose.ui.geometry.Offset(l, t),
+                    size = androidx.compose.ui.geometry.Size(w, h),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.18f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                )
+                drawCircle(tint, size.minDimension * 0.08f, androidx.compose.ui.geometry.Offset(cx, t + h * 0.27f))
+                drawCircle(tint, size.minDimension * 0.05f, androidx.compose.ui.geometry.Offset(cx - size.minDimension * 0.10f, t + h * 0.50f))
+                drawCircle(tint, size.minDimension * 0.05f, androidx.compose.ui.geometry.Offset(cx + size.minDimension * 0.10f, t + h * 0.50f))
+                drawCircle(tint, size.minDimension * 0.05f, androidx.compose.ui.geometry.Offset(cx, t + h * 0.65f))
+            }
+            Glyph.APPS -> {
+                val cell = size.minDimension * 0.24f
+                val gap = size.minDimension * 0.11f
+                val sx = cx - cell - gap / 2f
+                val sy = cy - cell - gap / 2f
+                for (r in 0..1) for (col in 0..1) {
+                    drawRoundRect(
+                        tint,
+                        topLeft = androidx.compose.ui.geometry.Offset(sx + col * (cell + gap), sy + r * (cell + gap)),
+                        size = androidx.compose.ui.geometry.Size(cell, cell),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cell * 0.2f)
+                    )
+                }
+            }
+            Glyph.CAST -> {
+                drawRoundRect(
+                    tint,
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.18f, size.height * 0.18f),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.64f, size.height * 0.50f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                )
+                drawArc(
+                    tint, 0f, 90f, false,
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.10f, size.height * 0.55f),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.60f, size.height * 0.60f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round)
+                )
+                drawCircle(tint, stroke * 0.75f, androidx.compose.ui.geometry.Offset(size.width * 0.18f, size.height * 0.80f))
+            }
+            Glyph.SETTINGS -> {
+                val r = size.minDimension * 0.26f
+                for (i in 0 until 8) {
+                    val a = Math.toRadians(i * 45.0)
+                    val ix = cx + kotlin.math.cos(a).toFloat() * r * 1.35f
+                    val iy = cy + kotlin.math.sin(a).toFloat() * r * 1.35f
+                    val ox = cx + kotlin.math.cos(a).toFloat() * r * 1.75f
+                    val oy = cy + kotlin.math.sin(a).toFloat() * r * 1.75f
+                    drawLine(tint, androidx.compose.ui.geometry.Offset(ix, iy), androidx.compose.ui.geometry.Offset(ox, oy), strokeWidth = stroke * 1.2f, cap = StrokeCap.Square)
+                }
+                drawCircle(tint, r * 1.05f, androidx.compose.ui.geometry.Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(stroke * 1.2f))
+                drawCircle(tint, r * 0.34f, androidx.compose.ui.geometry.Offset(cx, cy))
+            }
+            Glyph.SPEAKER -> {
+                val t = size.height * 0.34f
+                val h = size.height * 0.32f
+                drawRoundRect(
+                    tint,
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.16f, t),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.18f, h),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(1.5f)
+                )
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(size.width * 0.34f, t)
+                    lineTo(size.width * 0.60f, size.height * 0.20f)
+                    lineTo(size.width * 0.60f, size.height * 0.80f)
+                    lineTo(size.width * 0.34f, t + h)
+                    close()
+                }
+                drawPath(p, tint)
+                drawArc(
+                    tint, -48f, 96f, false,
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.43f, size.height * 0.22f),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.62f, size.height * 0.56f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round)
+                )
+            }
+            Glyph.PLAY_PAUSE -> {
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(size.width * 0.18f, size.height * 0.24f)
+                    lineTo(size.width * 0.18f, size.height * 0.76f)
+                    lineTo(size.width * 0.46f, cy)
+                    close()
+                }
+                drawPath(p, tint)
+                drawLine(tint, androidx.compose.ui.geometry.Offset(size.width * 0.62f, size.height * 0.30f), androidx.compose.ui.geometry.Offset(size.width * 0.62f, size.height * 0.70f), strokeWidth = stroke, cap = StrokeCap.Round)
+                drawLine(tint, androidx.compose.ui.geometry.Offset(size.width * 0.78f, size.height * 0.30f), androidx.compose.ui.geometry.Offset(size.width * 0.78f, size.height * 0.70f), strokeWidth = stroke, cap = StrokeCap.Round)
+            }
+            Glyph.BACK -> {
+                val p = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(size.width * 0.78f, size.height * 0.30f)
+                    cubicTo(size.width * 0.42f, size.height * 0.20f, size.width * 0.22f, size.height * 0.34f, size.width * 0.22f, size.height * 0.56f)
+                    cubicTo(size.width * 0.22f, size.height * 0.74f, size.width * 0.38f, size.height * 0.80f, size.width * 0.60f, size.height * 0.80f)
+                    moveTo(size.width * 0.22f, size.height * 0.56f)
+                    lineTo(size.width * 0.40f, size.height * 0.40f)
+                    moveTo(size.width * 0.22f, size.height * 0.56f)
+                    lineTo(size.width * 0.40f, size.height * 0.70f)
+                }
+                drawPath(
+                    p, tint,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun QuickActionPill(modifier: Modifier) {
     Surface(
