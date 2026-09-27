@@ -12,74 +12,46 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+      - name: Run managed Android emulator and capture Build 175
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          packages: "platform-tools emulator system-images;android-30;default;x86_64"
+          api-level: 30
+          arch: x86_64
+          profile: pixel_2
+          target: default
+          force-avd-creation: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          disable-animations: true
+          script: |
+            set -euo pipefail
 
-      - name: Capture Build 175 on direct emulator
-        run: |
-          set -euo pipefail
+            curl -fL --retry 3 --retry-all-errors \
+              -o app-debug.apk \
+              "https://github.com/TomasThrawat/WifiTVRemote/releases/download/v1.0.0-build-175/app-debug.apk"
 
-          IMAGE_ID="system-images;android-30;default;x86_64"
-          echo "Using $IMAGE_ID"
+            test -s app-debug.apk
+            echo "APK SHA-256:"
+            sha256sum app-debug.apk
+            test "$(sha256sum app-debug.apk | awk '{print $1}')" = "fa95f35beaed815793bd598b6c403db53a185b5bef46a47d9dbfa1b1b8744d41"
 
-          echo "no" | avdmanager create avd --force --name build175 --package "$IMAGE_ID" --device "pixel_2"
+            adb install -r app-debug.apk
+            adb shell am force-stop com.tomasthrawat.wifitvremote
+            adb shell monkey -p com.tomasthrawat.wifitvremote -c android.intent.category.LAUNCHER 1 >/dev/null
+            sleep 5
 
-          emulator -avd build175 \
-            -no-window \
-            -no-audio \
-            -no-boot-anim \
-            -no-snapshot \
-            -no-metrics \
-            -gpu swiftshader_indirect \
-            >/tmp/build175-emulator.log 2>&1 &
+            mkdir -p screenshot-evidence
+            adb exec-out screencap -p > screenshot-evidence/wifi-tv-remote-build-175.png
+            adb exec-out uiautomator dump /sdcard/window.xml >/dev/null
+            adb shell cat /sdcard/window.xml > screenshot-evidence/ui.xml
 
-          adb start-server
-          booted=false
-          for i in $(seq 1 180); do
-            if adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r" | grep -q "^1$"; then
-              booted=true
-              break
-            fi
-            sleep 2
-          done
-
-          if [ "$booted" != "true" ]; then
-            cat /tmp/build175-emulator.log || true
-            exit 1
-          fi
-
-          adb shell settings put global window_animation_scale 0
-          adb shell settings put global transition_animation_scale 0
-          adb shell settings put global animator_duration_scale 0
-
-          curl -fL --retry 3 --retry-all-errors \
-            -o app-debug.apk \
-            "https://github.com/TomasThrawat/WifiTVRemote/releases/download/v1.0.0-build-175/app-debug.apk"
-
-          test -s app-debug.apk
-          sha256sum app-debug.apk
-          test "$(sha256sum app-debug.apk | awk '{print $1}')" = "fa95f35beaed815793bd598b6c403db53a185b5bef46a47d9dbfa1b1b8744d41"
-
-          adb install -r app-debug.apk
-          adb shell am force-stop com.tomasthrawat.wifitvremote
-          adb shell monkey -p com.tomasthrawat.wifitvremote -c android.intent.category.LAUNCHER 1 >/dev/null
-          sleep 5
-
-          mkdir -p screenshot-evidence
-          adb exec-out screencap -p > screenshot-evidence/wifi-tv-remote-build-175.png
-          adb exec-out uiautomator dump /sdcard/window.xml >/dev/null
-          adb shell cat /sdcard/window.xml > screenshot-evidence/ui.xml
-
-          test -s screenshot-evidence/wifi-tv-remote-build-175.png
-          test -s screenshot-evidence/ui.xml
-          file screenshot-evidence/wifi-tv-remote-build-175.png
+            test -s screenshot-evidence/wifi-tv-remote-build-175.png
+            test -s screenshot-evidence/ui.xml
+            file screenshot-evidence/wifi-tv-remote-build-175.png
 
       - name: Upload real screenshot
         uses: actions/upload-artifact@v7.0.1
         if: always()
         with:
-          name: wifi-tv-remote-build-175-direct-screenshot
+          name: wifi-tv-remote-build-175-managed-screenshot
           path: screenshot-evidence/
           if-no-files-found: error
