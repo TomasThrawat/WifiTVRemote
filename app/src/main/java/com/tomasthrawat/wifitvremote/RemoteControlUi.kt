@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -184,7 +187,7 @@ private fun ReferenceRemoteLayout(
             radius = 23, color = remoteSurface2(),
             onClick = remote::power
         ) {
-            Text("⏻", color = remoteText(), fontSize = 18.sp)
+            ReferenceGlyph(Glyph.POWER, remoteText(), Modifier.size(22.dp))
         }
 
         Column(
@@ -219,7 +222,7 @@ private fun ReferenceRemoteLayout(
             radius = 23, color = remoteSurface2(),
             onClick = remote::input
         ) {
-            Text("⌁", color = remoteText(), fontSize = 18.sp)
+            ReferenceGlyph(Glyph.CAST, remoteText(), Modifier.size(22.dp))
         }
 
         ReferenceTextButton("SETUP", 22, 132, 52, 24, onClick = onSetup)
@@ -497,6 +500,129 @@ private fun StreamReferenceButton(
     }
 }
 
+private enum class Glyph { POWER, REMOTE, APPS, CAST, SETTINGS }
+
+@Composable
+private fun ReferenceGlyph(
+    kind: Glyph,
+    tint: Color,
+    modifier: Modifier
+) {
+    Canvas(modifier) {
+        val stroke = (size.minDimension * 0.075f).coerceAtLeast(1.3f)
+        val center = size.minDimension / 2f
+        when (kind) {
+            Glyph.POWER -> {
+                drawArc(
+                    color = tint,
+                    startAngle = -45f,
+                    sweepAngle = 270f,
+                    useCenter = false,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(
+                        width = stroke,
+                        cap = StrokeCap.Round
+                    )
+                )
+                drawLine(
+                    color = tint,
+                    start = androidx.compose.ui.geometry.Offset(center, size.height * 0.08f),
+                    end = androidx.compose.ui.geometry.Offset(center, size.height * 0.46f),
+                    strokeWidth = stroke,
+                    cap = StrokeCap.Round
+                )
+            }
+            Glyph.REMOTE -> {
+                val w = size.width * 0.46f
+                val h = size.height * 0.78f
+                val left = (size.width - w) / 2f
+                val top = (size.height - h) / 2f
+                drawRoundRect(
+                    color = tint,
+                    topLeft = androidx.compose.ui.geometry.Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(w, h),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.18f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                )
+                drawCircle(tint, radius = size.minDimension * 0.09f, center = androidx.compose.ui.geometry.Offset(center, top + h * 0.26f))
+                val r = size.minDimension * 0.055f
+                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center - r * 1.8f, top + h * 0.48f))
+                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center + r * 1.8f, top + h * 0.48f))
+                drawCircle(tint, r, androidx.compose.ui.geometry.Offset(center, top + h * 0.64f))
+            }
+            Glyph.APPS -> {
+                val gap = size.minDimension * 0.12f
+                val cell = (size.minDimension * 0.30f)
+                val startX = center - cell - gap / 2f
+                val startY = center - cell - gap / 2f
+                for (row in 0..1) for (col in 0..1) {
+                    drawRoundRect(
+                        color = tint,
+                        topLeft = androidx.compose.ui.geometry.Offset(
+                            startX + col * (cell + gap),
+                            startY + row * (cell + gap)
+                        ),
+                        size = androidx.compose.ui.geometry.Size(cell, cell),
+                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(cell * 0.18f)
+                    )
+                }
+            }
+            Glyph.CAST -> {
+                val left = size.width * 0.18f
+                val top = size.height * 0.18f
+                val right = size.width * 0.82f
+                val bottom = size.height * 0.68f
+                drawRoundRect(
+                    color = tint,
+                    topLeft = androidx.compose.ui.geometry.Offset(left, top),
+                    size = androidx.compose.ui.geometry.Size(right-left, bottom-top),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.minDimension * 0.08f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke)
+                )
+                drawArc(
+                    color = tint,
+                    startAngle = 0f,
+                    sweepAngle = 90f,
+                    useCenter = false,
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width * 0.12f, size.height * 0.58f),
+                    size = androidx.compose.ui.geometry.Size(size.width * 0.55f, size.height * 0.55f),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = StrokeCap.Round)
+                )
+                drawCircle(
+                    color = tint,
+                    radius = stroke * 0.75f,
+                    center = androidx.compose.ui.geometry.Offset(size.width * 0.18f, size.height * 0.80f)
+                )
+            }
+            Glyph.SETTINGS -> {
+                val r = size.minDimension * 0.26f
+                for (i in 0 until 8) {
+                    val a = Math.toRadians(i * 45.0)
+                    val inner = r * 1.35f
+                    val outer = r * 1.75f
+                    val x1 = center + kotlin.math.cos(a).toFloat() * inner
+                    val y1 = center + kotlin.math.sin(a).toFloat() * inner
+                    val x2 = center + kotlin.math.cos(a).toFloat() * outer
+                    val y2 = center + kotlin.math.sin(a).toFloat() * outer
+                    drawLine(
+                        color = tint,
+                        start = androidx.compose.ui.geometry.Offset(x1, y1),
+                        end = androidx.compose.ui.geometry.Offset(x2, y2),
+                        strokeWidth = stroke * 1.25f,
+                        cap = StrokeCap.Square
+                    )
+                }
+                drawCircle(
+                    color = tint,
+                    radius = r * 1.05f,
+                    center = androidx.compose.ui.geometry.Offset(center, center),
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(stroke * 1.25f)
+                )
+                drawCircle(tint, r * 0.36f, androidx.compose.ui.geometry.Offset(center, center))
+            }
+        }
+    }
+}
+
 @Composable
 private fun ReferenceBottomNav(
     destination: String,
@@ -531,10 +657,16 @@ private fun ReferenceBottomNav(
                         .size(23.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        icon,
-                        color = if (destination == item.name) remoteText() else remoteMuted(),
-                        fontSize = 13.sp
+                    val tint = if (destination == item.name) remoteText() else remoteMuted()
+                    ReferenceGlyph(
+                        kind = when (item) {
+                            Destination.REMOTE -> Glyph.REMOTE
+                            Destination.APPS -> Glyph.APPS
+                            Destination.CAST -> Glyph.CAST
+                            Destination.SETTINGS -> Glyph.SETTINGS
+                        },
+                        tint = tint,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
                 if (destination == item.name) {
