@@ -2,7 +2,7 @@ package com.tomasthrawat.wifitvremote
 
 import androidx.compose.ui.unit.LayoutDirection
 
-internal enum class RemoteQuickAction {
+enum class RemoteQuickAction {
     BACK, HOME, NUMBER_PAD
 }
 
