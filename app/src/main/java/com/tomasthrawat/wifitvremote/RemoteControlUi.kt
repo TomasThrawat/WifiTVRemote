@@ -220,7 +220,7 @@ private fun ReferenceRemoteLayout(
             Text("⌁", color = remoteText(), fontSize = 18.sp)
         }
 
-        ReferenceTextButton("SETUP", 22, 101, 52, 24, onSetup)
+        ReferenceTextButton("SETUP", 22, 101, 52, 24, onClick = onSetup)
         ReferenceTextButton("SOURCE", 224, 101, 54, 24, onClick = remote::input)
 
         DPadReference(remote, Modifier.offset(72.dp, 109.dp))
