@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private const val DESIGN_WIDTH = 300f
-private const val DESIGN_HEIGHT = 595f
+private const val DESIGN_HEIGHT = 619f
 
 @Composable
 private fun remoteBackground(): Color =
@@ -139,7 +139,7 @@ internal fun RemoteScreen(
             .background(remoteBackground()),
         contentAlignment = Alignment.TopCenter
     ) {
-        val scale = minOf(maxWidth.value / DESIGN_WIDTH, maxHeight.value / DESIGN_HEIGHT)
+        val scale = maxWidth.value / DESIGN_WIDTH
         Box(
             modifier = Modifier
                 .width(DESIGN_WIDTH.dp)
@@ -180,7 +180,7 @@ private fun ReferenceRemoteLayout(
             .background(remoteBackground())
     ) {
         ControlSurface(
-            x = 23, y = 30, w = 46, h = 46,
+            x = 23, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::power
         ) {
@@ -189,7 +189,8 @@ private fun ReferenceRemoteLayout(
 
         Column(
             modifier = Modifier
-                .offset(75.dp, 29.dp)
+                .offset(75.dp, 53.dp)
+                .padding(top = 19.dp)
                 .size(150.dp, 46.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -214,24 +215,24 @@ private fun ReferenceRemoteLayout(
         }
 
         ControlSurface(
-            x = 231, y = 30, w = 46, h = 46,
+            x = 231, y = 54, w = 46, h = 46,
             radius = 23, color = remoteSurface2(),
             onClick = remote::input
         ) {
             Text("⌁", color = remoteText(), fontSize = 18.sp)
         }
 
-        ReferenceTextButton("SETUP", 22, 101, 52, 24, onClick = onSetup)
-        ReferenceTextButton("SOURCE", 224, 101, 54, 24, onClick = remote::input)
+        ReferenceTextButton("SETUP", 22, 132, 52, 24, onClick = onSetup)
+        ReferenceTextButton("SOURCE", 224, 132, 54, 24, onClick = remote::input)
 
-        DPadReference(remote, Modifier.offset(72.dp, 109.dp))
+        DPadReference(remote, Modifier.offset(72.dp, 133.dp))
 
-        ReferenceTextButton("EXIT", 23, 239, 46, 46, true, remote::back)
-        ReferenceTextButton("CH-LIST", 230, 239, 47, 46, true, remote::menu)
+        ReferenceTextButton("EXIT", 23, 243, 46, 46, true, remote::back)
+        ReferenceTextButton("CH-LIST", 230, 243, 47, 46, true, remote::menu)
 
         Row(
             modifier = Modifier
-                .offset(93.dp, 279.dp)
+                .offset(93.dp, 303.dp)
                 .size(114.dp, 33.dp),
             horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically
@@ -242,7 +243,7 @@ private fun ReferenceRemoteLayout(
         }
 
         VerticalRocker(
-            modifier = Modifier.offset(45.dp, 327.dp),
+            modifier = Modifier.offset(45.dp, 351.dp),
             label = "VOL",
             top = "+",
             middle = "●",
@@ -253,7 +254,7 @@ private fun ReferenceRemoteLayout(
         )
 
         VerticalRocker(
-            modifier = Modifier.offset(209.dp, 327.dp),
+            modifier = Modifier.offset(209.dp, 351.dp),
             label = "CH",
             top = "+",
             middle = "•",
@@ -263,27 +264,27 @@ private fun ReferenceRemoteLayout(
             onBottom = remote::channelDown
         )
 
-        MiniControl(100, 327, "≡", remote::menu)
-        MiniControl(154, 327, "i", remote::input)
-        WideControl(100, 382, "MUTE", remote::mute)
+        MiniControl(100, 351, "≡", remote::menu)
+        MiniControl(154, 351, "i", remote::input)
+        WideControl(100, 406, "MUTE", remote::mute)
 
         StreamReferenceButton(
             x = 30,
-            y = 465,
+            y = 489,
             text = "▶ YouTube",
             textColor = Color(0xFFFF3333),
             onClick = { remote.launchAppLink("https://www.youtube.com/") }
         )
         StreamReferenceButton(
             x = 113,
-            y = 465,
+            y = 489,
             text = "NETFLIX",
             textColor = Color(0xFFE50914),
             onClick = { remote.launchAppLink("https://www.netflix.com/") }
         )
         StreamReferenceButton(
             x = 196,
-            y = 465,
+            y = 489,
             text = "prime video",
             textColor = remoteText(),
             onClick = { remote.launchAppLink("https://www.primevideo.com/") }
@@ -509,16 +510,16 @@ private fun ReferenceBottomNav(
     )
     Row(
         modifier = Modifier
-            .offset(16.dp, 519.dp)
+             .offset(16.dp, 543.dp)
             .size(269.dp, 76.dp)
             .background(remoteBackground()),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.Top
     ) {
         items.forEach { (item, icon, label) ->
             Column(
                 modifier = Modifier
-                    .width(61.dp)
+                    .width(40.dp)
                     .height(76.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .clickable { onDestination(item) },
