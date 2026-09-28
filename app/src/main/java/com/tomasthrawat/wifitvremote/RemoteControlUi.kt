@@ -824,7 +824,7 @@ private fun NumberPadOverlay(
                             .semantics { contentDescription = "Close numeric keypad" },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("Ã", color = remoteText(), fontSize = 17.sp)
+                        Text("×", color = remoteText(), fontSize = 17.sp)
                     }
                 }
 
