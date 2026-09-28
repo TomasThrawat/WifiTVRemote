@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,33 +63,19 @@ import androidx.compose.ui.input.pointer.pointerInput
 private const val DESIGN_WIDTH = 304f
 private const val DESIGN_HEIGHT = 622f
 
-@Composable
-private fun remoteBackground(): Color =
-    if (isSystemInDarkTheme()) Color.Black else Color(0xFFF7F6FA)
+private fun remoteBackground(): Color = Color.Black
 
-@Composable
-private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White
+private fun remoteSurface(): Color = Color(0xFF181818)
 
-@Composable
-private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White
+private fun remoteSurface2(): Color = Color(0xFF181818)
 
-@Composable
-private fun remoteText(): Color =
-    if (isSystemInDarkTheme()) Color(0xFFFFFFFF) else Color(0xFF333333)
+private fun remoteText(): Color = Color(0xFFFFFFFF)
 
-@Composable
-private fun remoteMuted(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF9B9B9B) else Color(0xFF66666C)
+private fun remoteMuted(): Color = Color(0xFF9B9B9B)
 
-@Composable
-private fun remoteBorder(): Color =
-    if (isSystemInDarkTheme()) Color.White.copy(alpha = 0.09f) else Color.Black.copy(alpha = 0.08f)
+private fun remoteBorder(): Color = Color.White.copy(alpha = 0.09f)
 
-@Composable
-private fun remotePressedSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF1A1A1A) else Color(0xFFE3E3E7)
+private fun remotePressedSurface(): Color = Color(0xFF1A1A1A)
 
 internal interface RemoteUiActions {
     fun setTextStateListener(listener: ((Boolean) -> Unit)?)
