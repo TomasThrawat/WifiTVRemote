@@ -275,7 +275,7 @@ private fun ReferenceRemoteLayout(
     ) {
         // Top status row: power, connection pill, speaker.
         ControlSurface(
-            x = 26, y = 57, w = 42, h = 42,
+            x = 26, y = 56, w = 44, h = 44,
             radius = 23, color = remoteSurface2(),
             onClick = remote::power,
             contentDescription = "Power"
@@ -284,14 +284,14 @@ private fun ReferenceRemoteLayout(
         }
 
         ReferenceStatusPill(
-            x = 77,
-            y = 57,
+            x = 76,
+            y = 56,
             tvName = tvName,
             connected = status.equals("Connected", ignoreCase = true)
         )
 
         ControlSurface(
-            x = 233, y = 57, w = 43, h = 42,
+            x = 233, y = 56, w = 44, h = 44,
             radius = 23, color = remoteSurface2(),
             onClick = remote::mute,
             contentDescription = "Mute"
@@ -301,7 +301,7 @@ private fun ReferenceRemoteLayout(
 
         // Setup and source sit on the second row, beside the navigation pad.
         ControlSurface(
-            x = 27, y = 136, w = 42, h = 42,
+            x = 26, y = 134, w = 44, h = 44,
             radius = 23, color = remoteSurface2(),
             onClick = onSetup,
             contentDescription = "Setup"
@@ -310,7 +310,7 @@ private fun ReferenceRemoteLayout(
         }
 
         ControlSurface(
-            x = 233, y = 136, w = 43, h = 42,
+            x = 233, y = 134, w = 44, h = 44,
             radius = 23, color = remoteSurface2(),
             onClick = remote::input,
             contentDescription = "Source"
@@ -320,34 +320,34 @@ private fun ReferenceRemoteLayout(
 
         DPadReference(
             remote = remote,
-            modifier = Modifier.offset(78.dp, 139.dp)
+            modifier = Modifier.offset(74.dp, 134.dp)
         )
 
         // Side buttons align with the lower half of the D-pad.
         ReferenceTextButton(
             text = "EXIT",
-            x = 27, y = 246, w = 42, h = 42,
+            x = 26, y = 245, w = 44, h = 44,
             fill = true,
             onClick = remote::back
         )
         ReferenceTextButton(
             text = "CH-LIST",
-            x = 233, y = 246, w = 43, h = 42,
+            x = 233, y = 245, w = 44, h = 44,
             fill = true,
             onClick = remote::menu
         )
 
         // Small reference-mode strip.
         ReferenceModeStrip(
-            x = 102,
-            y = 306,
+            x = 95,
+            y = 305,
             onFirst = remote::input,
             onSecond = remote::mute,
             onNumbers = { numberPadOpen = true }
         )
 
         DualRocker(
-            modifier = Modifier.offset(48.dp, 354.dp),
+            modifier = Modifier.offset(46.dp, 353.dp),
             label = "VOL",
             onUp = remote::volumeUp,
             onDown = remote::volumeDown,
@@ -356,7 +356,7 @@ private fun ReferenceRemoteLayout(
         )
 
         DualRocker(
-            modifier = Modifier.offset(210.dp, 354.dp),
+            modifier = Modifier.offset(210.dp, 353.dp),
             label = "CH",
             onUp = remote::channelUp,
             onDown = remote::channelDown,
@@ -366,7 +366,7 @@ private fun ReferenceRemoteLayout(
 
         // Center navigation: Home, Play/Pause, then a wide Back pill.
         CompactNavControl(
-            x = 103, y = 354,
+            x = 100, y = 352,
             contentDescription = "Home",
             onClick = remote::home
         ) {
@@ -374,7 +374,7 @@ private fun ReferenceRemoteLayout(
         }
 
         CompactNavControl(
-            x = 156, y = 354,
+            x = 155, y = 352,
             contentDescription = "Play/Pause",
             onClick = remote::playPause
         ) {
@@ -382,24 +382,24 @@ private fun ReferenceRemoteLayout(
         }
 
         WideControl(
-            x = 106, y = 409,
+            x = 102, y = 407,
             label = "BACK",
             onClick = remote::back
         )
 
-        ReferencePageIndicator(y = 454.dp)
+        ReferencePageIndicator(y = 466.dp)
 
         // Keep the three reference shortcut pills pixel-positioned, but leave them empty until configured.
         AppShortcutReferenceButton(
-            x = 35, y = 491, index = 0, shortcut = shortcuts.getOrElse(0) { AppShortcut() },
+            x = 31, y = 490, index = 0, shortcut = shortcuts.getOrElse(0) { AppShortcut() },
             onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
         AppShortcutReferenceButton(
-            x = 118, y = 491, index = 1, shortcut = shortcuts.getOrElse(1) { AppShortcut() },
+            x = 115, y = 490, index = 1, shortcut = shortcuts.getOrElse(1) { AppShortcut() },
             onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
         AppShortcutReferenceButton(
-            x = 202, y = 491, index = 2, shortcut = shortcuts.getOrElse(2) { AppShortcut() },
+            x = 198, y = 490, index = 2, shortcut = shortcuts.getOrElse(2) { AppShortcut() },
             onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
 
@@ -422,7 +422,7 @@ private fun ReferenceStatusPill(
     Row(
         modifier = Modifier
             .offset(x.dp, y.dp)
-             .size(148.dp, 42.dp)
+             .size(150.dp, 44.dp)
             .clip(RoundedCornerShape(23.dp))
             .background(remoteSurface2())
             .border(1.dp, remoteBorder(), RoundedCornerShape(23.dp))
@@ -458,7 +458,7 @@ private fun ReferenceModeStrip(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-             .size(104.dp, 31.dp),
+             .size(113.dp, 32.dp),
         color = remoteSurface2(),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, remoteBorder())
@@ -579,18 +579,18 @@ private fun ControlSurface(
 private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
     Box(
         modifier
-              .size(149.dp)
+              .size(154.dp)
             .clip(CircleShape)
             .background(if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White)
             .border(1.dp, remoteBorder(), CircleShape)
     ) {
-        DPadKeyReference(Modifier.offset(52.dp, 6.dp), "▲", remote::up)
-        DPadKeyReference(Modifier.offset(5.dp, 52.dp), "◀", remote::left)
-        DPadKeyReference(Modifier.offset(105.dp, 52.dp), "▶", remote::right)
-        DPadKeyReference(Modifier.offset(52.dp, 105.dp), "▼", remote::down)
+        DPadKeyReference(Modifier.offset(54.dp, 3.dp), "▲", remote::up)
+        DPadKeyReference(Modifier.offset(2.dp, 54.dp), "◀", remote::left)
+        DPadKeyReference(Modifier.offset(105.dp, 54.dp), "▶", remote::right)
+        DPadKeyReference(Modifier.offset(54.dp, 106.dp), "▼", remote::down)
         Surface(
             modifier = Modifier
-                  .offset(45.dp, 45.dp)
+                  .offset(48.dp, 48.dp)
                 .size(58.dp),
             color = if (isSystemInDarkTheme()) Color(0xFF121212) else Color(0xFFF5F5F5),
             shape = CircleShape,
@@ -975,7 +975,7 @@ private fun DualRocker(
     downIcon: String = "−"
 ) {
     Surface(
-        modifier = modifier .size(46.dp, 98.dp),
+        modifier = modifier .size(48.dp, 100.dp),
         color = remoteSurface2(),
         shape = RoundedCornerShape(23.dp),
         border = BorderStroke(1.dp, remoteBorder())
@@ -1140,7 +1140,7 @@ private fun CompactNavControl(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-            .size(36.dp)
+            .size(48.dp)
             .semantics { this.contentDescription = contentDescription },
         color = remoteSurface2(),
         shape = CircleShape,
@@ -1175,7 +1175,7 @@ private fun MiniControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
 @Composable
 private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
     ControlSurface(
-        x, y, 92, 42, 21, remoteSurface2(), onClick, contentDescription = label
+        x, y, 100, 48, 24, remoteSurface2(), onClick, contentDescription = label
     ) {
         if (label == "BACK") {
             ReferenceGlyph(Glyph.BACK, remoteText(), Modifier.size(22.dp))
@@ -1197,7 +1197,7 @@ private fun AppShortcutReferenceButton(
     Surface(
         modifier = Modifier
             .offset(x.dp, y.dp)
-             .size(68.dp, 36.dp)
+             .size(73.dp, 39.dp)
             .pointerInput(index, shortcut) {
                 detectTapGestures(
                     onLongPress = { onLongPress(index) },
@@ -1343,8 +1343,8 @@ private fun ReferenceBottomNav(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Surface(
             modifier = Modifier
-                 .offset(36.dp, 548.dp)
-                 .size(234.dp, 38.dp),
+                 .offset(35.dp, 545.dp)
+                 .size(235.dp, 46.dp),
             color = remoteSurface2(),
             shape = RoundedCornerShape(24.dp),
             border = BorderStroke(1.dp, remoteBorder())
@@ -1359,8 +1359,8 @@ private fun ReferenceBottomNav(
                     Column(
                         modifier = Modifier
                             .width(54.dp)
-                            .height(40.dp)
-                            .clip(RoundedCornerShape(18.dp))
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
                             .background(
                                 if (selected) {
                                     if (isSystemInDarkTheme()) Color(0xFF14324A) else Color(0xFFE1F0FF)
