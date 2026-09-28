@@ -101,6 +101,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         RemoteScreen(
             remote = previewRemote,
             status = "Connected",
+            tvName = "Samsung Smart TV",
             onDisconnect = { Log.d("WifiTVRemoteQA", "ACTION:disconnect") }
         )
         return
@@ -113,10 +114,11 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
     var pairing by remember { mutableStateOf<TvPairing?>(null) }
     var remote by remember { mutableStateOf<TvRemote?>(null) }
     var connected by remember { mutableStateOf(false) }
+    var connectedTvName by remember { mutableStateOf("") }
     var showRemote by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
     var codeRequested by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("WiÃÂ¢ÃÂÃÂFi ÃÂÃÂÃÂÃÂÃÂÃÂ· ÃÂ¢ÃÂÃÂ¢ ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂÃÂÃÂ² ÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ«") }
+    var status by remember { mutableStateOf("Ready to scan for TVs") }
     var scanJob by remember { mutableStateOf<Job?>(null) }
     var scanGeneration by remember { mutableIntStateOf(0) }
     var attemptGeneration by remember { mutableIntStateOf(0) }
@@ -128,6 +130,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         remote?.stop()
         remote = null
         connected = false
+        connectedTvName = ""
         showRemote = false
         codeRequested = false
         code = ""
@@ -139,20 +142,24 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         val thisScan = scanGeneration
         scanJob = null
         devices.clear()
-        status = "ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ«..."
+        status = "Scanning for TVs..."
 
         scanJob = scope.launch {
             discovery.scan().collect { device ->
                 if (thisScan == scanGeneration && devices.none { it.host == device.host }) {
                     devices.add(device)
-                    status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
+                    status = "Found " + devices.size + " TVs"
+ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
                 }
             }
             if (thisScan == scanGeneration) {
                 status = if (devices.isEmpty()) {
-                    "ÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ©"
+                    "ÃÂÃÂÃÂÃÂ
+ ÃÂÃÂÃÂÃÂªÃÂÃÂ
+ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ©"
                 } else {
-                    "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
+                    "ÃÂÃÂªÃÂÃÂ
+ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¹ÃÂÃÂ«ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ${devices.size} ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ§ÃÂÃÂ²"
                 }
                 scanJob = null
             }
@@ -166,7 +173,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         stopCurrentConnection()
 
         val token = attemptGeneration
-        status = "ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ¨ÃÂÃÂ ${device.name}..."
+        status = "Connecting to " + device.name + "..."
         code = ""
         codeRequested = false
 
@@ -177,14 +184,14 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             onCode = {
                 if (token == attemptGeneration && pairing === p) {
                     codeRequested = true
-                    status = "ÃÂÃÂ£ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ ÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ."
+                    status = "Enter the PIN shown on your TV."
                 }
             },
             onPaired = { identity ->
                 if (token == attemptGeneration && pairing === p) {
                     pairing = null
                     p.stop()
-                    status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ. ÃÂÃÂ¬ÃÂÃÂ§ÃÂÃÂ±ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ..."
+                    status = "Pairing successful. Connecting..."
 
                     lateinit var r: TvRemote
                     r = TvRemote(
@@ -193,6 +200,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                         onReady = {
                             if (token == attemptGeneration && remote === r) {
                                 connected = true
+                                connectedTvName = device.name
                                 pairing = null
                                 codeRequested = false
                                 status = "Connected"
@@ -205,7 +213,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                                 remote = null
                                 connected = false
                                 showRemote = false
-                                status = "ÃÂÃÂ®ÃÂÃÂ·ÃÂÃÂ£: " + (error.message ?: error.javaClass.simpleName)
+                                status = "Error: " + (error.message ?: error.javaClass.simpleName)
                             }
                         }
                     )
@@ -218,7 +226,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     p.stop()
                     pairing = null
                     codeRequested = false
-                    status = "ÃÂÃÂ®ÃÂÃÂ·ÃÂÃÂ£: " + (error.message ?: error.javaClass.simpleName)
+                    status = "Error: " + (error.message ?: error.javaClass.simpleName)
                 }
             }
         )
@@ -246,9 +254,11 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
         RemoteScreen(
             remote = TvRemoteUiActions(remote!!),
             status = status,
+            tvName = connectedTvName,
             onDisconnect = {
                 stopCurrentConnection()
-                status = "ÃÂÃÂªÃÂÃÂ ÃÂÃÂÃÂÃÂµÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ"
+                status = "ÃÂÃÂªÃÂÃÂ
+ ÃÂÃÂÃÂÃÂµÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ"
             }
         )
     } else {
@@ -269,9 +279,14 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
                     val success = currentPairing.submitCode(submittedCode)
                     if (token == attemptGeneration && pairing === currentPairing) {
                         status = if (success) {
-                            "ÃÂÃÂªÃÂÃÂ ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ². ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂ± ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ..."
+                            "ÃÂÃÂªÃÂÃÂ
+ ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂ
+ÃÂÃÂ². ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂ± ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ..."
                         } else {
-                            "ÃÂÃÂªÃÂÃÂ¹ÃÂÃÂ°ÃÂÃÂ± ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ². ÃÂÃÂªÃÂÃÂ£ÃÂÃÂÃÂÃÂ¯ ÃÂÃÂÃÂÃÂ ÃÂÃÂ¥ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ³ÃÂÃÂ¯ÃÂÃÂ§ÃÂÃÂ³ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂµÃÂÃÂ­ÃÂÃÂÃÂÃÂ­."
+                            "ÃÂÃÂªÃÂÃÂ¹ÃÂÃÂ°ÃÂÃÂ± ÃÂÃÂ¥ÃÂÃÂ±ÃÂÃÂ³ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂ
+ÃÂÃÂ². ÃÂÃÂªÃÂÃÂ£ÃÂÃÂÃÂÃÂ¯ ÃÂÃÂ
+ÃÂÃÂ ÃÂÃÂ¥ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂ
+ÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ³ÃÂÃÂ¯ÃÂÃÂ§ÃÂÃÂ³ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂµÃÂÃÂ­ÃÂÃÂÃÂÃÂ­."
                         }
                     }
                 }
@@ -298,8 +313,8 @@ private fun ConnectionScreen(
             TopAppBar(
                 title = {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ", style = MaterialTheme.typography.titleLarge)
-                        Text("WiÃÂ¢ÃÂÃÂFi TV Remote", style = MaterialTheme.typography.labelMedium)
+                        Text("Connect to TV", style = MaterialTheme.typography.titleLarge)
+                        Text("Wi-Fi TV Remote", style = MaterialTheme.typography.labelMedium)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -307,7 +322,7 @@ private fun ConnectionScreen(
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -333,13 +348,13 @@ private fun ConnectionScreen(
                         .fillMaxWidth()
                         .heightIn(min = 52.dp)
                 ) {
-                    Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ­ÃÂÃÂ« ÃÂÃÂ¹ÃÂÃÂ ÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ")
+                    Text("Scan for TVs")
                 }
             }
 
             if (devices.isNotEmpty()) {
                 item {
-                    Text("ÃÂÃÂ§ÃÂÃÂÃÂÃÂ£ÃÂÃÂ¬ÃÂÃÂÃÂÃÂ²ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ¨ÃÂÃÂ©", style = MaterialTheme.typography.titleMedium)
+                    Text("Available TVs", style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -373,7 +388,7 @@ private fun ConnectionScreen(
                             onClick = { onConnect(device) },
                             modifier = Modifier.heightIn(min = 48.dp)
                         ) {
-                            Text("ÃÂÃÂ§ÃÂÃÂªÃÂÃÂµÃÂÃÂ§ÃÂÃÂ")
+                            Text("Connect")
                         }
                     }
                 }
@@ -392,15 +407,15 @@ private fun ConnectionScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text("ÃÂÃÂ¥ÃÂÃÂÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ", style = MaterialTheme.typography.titleMedium)
+                            Text("Pair your TV", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "ÃÂÃÂ£ÃÂÃÂ¯ÃÂÃÂ®ÃÂÃÂ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ¸ÃÂÃÂ§ÃÂÃÂÃÂÃÂ± ÃÂÃÂ¹ÃÂÃÂÃÂÃÂ ÃÂÃÂ´ÃÂÃÂ§ÃÂÃÂ´ÃÂÃÂ© ÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂÃÂÃÂ²ÃÂÃÂÃÂÃÂÃÂÃÂ.",
+                                "Enter the PIN shown on your TV.",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             OutlinedTextField(
                                 value = code,
                                 onValueChange = onCodeChange,
-                                label = { Text("ÃÂÃÂ±ÃÂÃÂÃÂÃÂ² ÃÂÃÂ§ÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂªÃÂÃÂ±ÃÂÃÂ§ÃÂÃÂ") },
+                                label = { Text("PIN") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
                                 modifier = Modifier.fillMaxWidth()
@@ -411,7 +426,7 @@ private fun ConnectionScreen(
                                     .fillMaxWidth()
                                     .heightIn(min = 48.dp)
                             ) {
-                                Text("ÃÂÃÂªÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂ¯ ÃÂÃÂ§ÃÂÃÂÃÂÃÂ±ÃÂÃÂÃÂÃÂ²")
+                                Text("Pair")
                             }
                         }
                     }
@@ -420,7 +435,6 @@ private fun ConnectionScreen(
         }
     }
 }
-
 
 @Composable
 private fun ControlSection(
