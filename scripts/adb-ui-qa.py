@@ -45,6 +45,14 @@ def tap(n):
     adb("shell","input","tap",str(n[1]),str(n[2]))
     time.sleep(0.25)
 
+def long_press(n):
+    adb("shell","input","swipe",str(n[1]),str(n[2]),str(n[1]),str(n[2]),"900")
+    time.sleep(0.35)
+
+def assert_text(label, path="ui-source-main.xml"):
+    xml=dump(path)
+    if not find(xml,label): raise AssertionError("Not visible: "+label)
+
 def check(name,fn):
     try: fn(); RESULTS.append({"name":name,"ok":True})
     except Exception as e: RESULTS.append({"name":name,"ok":False,"error":str(e)})
@@ -69,14 +77,35 @@ main_labels=[
 "Power","Mute","SETUP","SOURCE","▲","◀","▶","▼","OK",
 "EXIT","CH-LIST","Back","Home","PLAY","BACK",
 "Volume up","Mute","Channel menu","Volume down","Channel up","Channel down",
-"Numeric keypad","YouTube","NETFLIX","prime video"
+"Numeric keypad","Empty app shortcut 1","Empty app shortcut 2","Empty app shortcut 3"
 ]
 # Tap each required main control. Duplicate Mute is intentional: it is the center volume control in this UI.
 seen=set()
 for label in main_labels:
+    if label.startswith("Empty app shortcut"):
+        continue
     if (label) in seen and label=="Mute": continue
     seen.add(label)
     click_restart("main:"+label,label)
+
+for index in range(1,4):
+    label=f"Empty app shortcut {index}"
+    launch(); xml=dump("ui-source-main.xml"); n=find(xml,label)
+    if not n:
+        RESULTS.append({"name":f"shortcut:{index}:visible","ok":False,"error":"Not found: "+label})
+        continue
+    check(f"shortcut:{index}:tap opens editor",lambda n=n:tap(n))
+    check(f"shortcut:{index}:editor visible",lambda index=index:assert_text(f"App shortcut {index}"))
+    cancel=find(dump("ui-source-main.xml"),"Cancel")
+    if cancel: tap(cancel)
+    else: RESULTS.append({"name":f"shortcut:{index}:cancel","ok":False,"error":"Cancel not found"})
+
+    launch(); xml=dump("ui-source-main.xml"); n=find(xml,label)
+    check(f"shortcut:{index}:long press opens editor",lambda n=n:long_press(n))
+    check(f"shortcut:{index}:long press editor visible",lambda index=index:assert_text(f"App shortcut {index}"))
+    cancel=find(dump("ui-source-main.xml"),"Cancel")
+    if cancel: tap(cancel)
+    else: RESULTS.append({"name":f"shortcut:{index}:long-press-cancel","ok":False,"error":"Cancel not found"})
 
 # Explicit keypad flow.
 launch(); xml=dump("ui-source-main.xml"); toggle=find(xml,"Numeric keypad")

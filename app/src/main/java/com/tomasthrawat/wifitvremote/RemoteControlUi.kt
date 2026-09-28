@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,6 +32,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -53,7 +57,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.input.pointer.pointerInput
 
 private const val DESIGN_WIDTH = 300f
 private const val DESIGN_HEIGHT = 619f
@@ -138,6 +144,29 @@ internal class TvRemoteUiActions(private val remote: TvRemote) : RemoteUiActions
 
 private enum class Destination { REMOTE, APPS, CAST, SETTINGS }
 
+data class AppShortcut(
+    val name: String = "",
+    val packageName: String = ""
+)
+
+private class ShortcutStore(context: android.content.Context) {
+    private val prefs = context.getSharedPreferences("app_shortcuts", android.content.Context.MODE_PRIVATE)
+
+    fun load(): List<AppShortcut> = (0 until 3).map { index ->
+        AppShortcut(
+            name = prefs.getString("name_$index", "").orEmpty(),
+            packageName = prefs.getString("package_$index", "").orEmpty()
+        )
+    }
+
+    fun save(index: Int, shortcut: AppShortcut) {
+        prefs.edit()
+            .putString("name_$index", shortcut.name)
+            .putString("package_$index", shortcut.packageName)
+            .apply()
+    }
+}
+
 @Composable
 internal fun RemoteScreen(
     remote: RemoteUiActions,
@@ -145,6 +174,10 @@ internal fun RemoteScreen(
     tvName: String,
     onDisconnect: () -> Unit
 ) {
+    val context = LocalContext.current
+    val shortcutStore = remember { ShortcutStore(context) }
+    var shortcuts by remember { mutableStateOf(shortcutStore.load()) }
+    var editingShortcut by remember { mutableStateOf<Int?>(null) }
     var destination by rememberSaveable { mutableStateOf(Destination.REMOTE.name) }
 
     DisposableEffect(remote) {
@@ -180,6 +213,15 @@ internal fun RemoteScreen(
                         remote = remote,
                         status = status,
                         tvName = tvName,
+                        shortcuts = shortcuts,
+                        onEditShortcut = { editingShortcut = it },
+                        onLaunchShortcut = { index, shortcut ->
+                            if (shortcut.packageName.isBlank()) {
+                                editingShortcut = index
+                            } else {
+                                remote.launchAppLink("intent:#Intent;package=${shortcut.packageName.trim()};end")
+                            }
+                        },
                         onSetup = { destination = Destination.SETTINGS.name }
                     )
                 }
@@ -191,6 +233,22 @@ internal fun RemoteScreen(
                 destination = destination,
                 onDestination = { destination = it.name }
             )
+
+            editingShortcut?.let { index ->
+                val current = shortcuts.getOrNull(index) ?: AppShortcut()
+                ShortcutEditorDialog(
+                    index = index,
+                    shortcut = current,
+                    onDismiss = { editingShortcut = null },
+                    onSave = { updated ->
+                        val next = shortcuts.toMutableList()
+                        next[index] = updated
+                        shortcuts = next
+                        shortcutStore.save(index, updated)
+                        editingShortcut = null
+                    }
+                )
+            }
         }
     }
 }
@@ -201,6 +259,9 @@ private fun ReferenceRemoteLayout(
     remote: RemoteUiActions,
     status: String,
     tvName: String,
+    shortcuts: List<AppShortcut>,
+    onEditShortcut: (Int) -> Unit,
+    onLaunchShortcut: (Int, AppShortcut) -> Unit,
     onSetup: () -> Unit
 ) {
     var numberPadOpen by rememberSaveable { mutableStateOf(false) }
@@ -330,24 +391,18 @@ private fun ReferenceRemoteLayout(
 
         ReferencePageIndicator(y = 478.dp)
 
-        // Three streaming shortcuts, centered like the reference.
-        StreamReferenceButton(
-            x = 24, y = 503,
-            text = "YouTube",
-            textColor = Color(0xFFFF3333),
-            onClick = { remote.launchAppLink("https://www.youtube.com/") }
+        // Keep the three reference shortcut pills pixel-positioned, but leave them empty until configured.
+        AppShortcutReferenceButton(
+            x = 24, y = 503, index = 0, shortcut = shortcuts.getOrElse(0) { AppShortcut() },
+            onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
-        StreamReferenceButton(
-            x = 115, y = 503,
-            text = "NETFLIX",
-            textColor = Color(0xFFE50914),
-            onClick = { remote.launchAppLink("https://www.netflix.com/") }
+        AppShortcutReferenceButton(
+            x = 115, y = 503, index = 1, shortcut = shortcuts.getOrElse(1) { AppShortcut() },
+            onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
-        StreamReferenceButton(
-            x = 206, y = 503,
-            text = "prime video",
-            textColor = remoteText(),
-            onClick = { remote.launchAppLink("https://www.primevideo.com/") }
+        AppShortcutReferenceButton(
+            x = 206, y = 503, index = 2, shortcut = shortcuts.getOrElse(2) { AppShortcut() },
+            onTap = onLaunchShortcut, onLongPress = onEditShortcut
         )
 
         if (numberPadOpen) {
@@ -1130,6 +1185,93 @@ private fun WideControl(x: Int, y: Int, label: String, onClick: () -> Unit) {
             Text(label, color = remoteMuted(), fontSize = 8.sp, fontWeight = FontWeight.Medium)
         }
     }
+}
+
+@Composable
+private fun AppShortcutReferenceButton(
+    x: Int,
+    y: Int,
+    index: Int,
+    shortcut: AppShortcut,
+    onTap: (Int, AppShortcut) -> Unit,
+    onLongPress: (Int) -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .offset(x.dp, y.dp)
+            .size(70.dp, 32.dp)
+            .pointerInput(index, shortcut) {
+                detectTapGestures(
+                    onLongPress = { onLongPress(index) },
+                    onTap = { onTap(index, shortcut) }
+                )
+            }
+            .semantics {
+                contentDescription = if (shortcut.name.isBlank()) {
+                    "Empty app shortcut ${index + 1}"
+                } else {
+                    "App shortcut ${index + 1}: ${shortcut.name}"
+                }
+            },
+        color = remoteSurface2(),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            if (shortcut.name.isNotBlank()) {
+                Text(
+                    shortcut.name,
+                    color = remoteText(),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortcutEditorDialog(
+    index: Int,
+    shortcut: AppShortcut,
+    onDismiss: () -> Unit,
+    onSave: (AppShortcut) -> Unit
+) {
+    var name by remember(shortcut, index) { mutableStateOf(shortcut.name) }
+    var packageName by remember(shortcut, index) { mutableStateOf(shortcut.packageName) }
+    val valid = name.trim().isNotEmpty() && packageName.trim().isNotEmpty()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("App shortcut ${index + 1}") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("App name") },
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = packageName,
+                    onValueChange = { packageName = it },
+                    label = { Text("Package name") },
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(AppShortcut(name.trim(), packageName.trim()))
+                },
+                enabled = valid
+            ) { Text("Save") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 @Composable
