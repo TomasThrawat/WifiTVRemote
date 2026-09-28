@@ -70,11 +70,11 @@ private fun remoteBackground(): Color =
 
 @Composable
 private fun remoteSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF222222) else Color.White
+    if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White
 
 @Composable
 private fun remoteSurface2(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF222222) else Color.White
+    if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White
 
 @Composable
 private fun remoteText(): Color =
@@ -90,7 +90,7 @@ private fun remoteBorder(): Color =
 
 @Composable
 private fun remotePressedSurface(): Color =
-    if (isSystemInDarkTheme()) Color(0xFF2A2A2A) else Color(0xFFE3E3E7)
+    if (isSystemInDarkTheme()) Color(0xFF1A1A1A) else Color(0xFFE3E3E7)
 
 internal interface RemoteUiActions {
     fun setTextStateListener(listener: ((Boolean) -> Unit)?)
@@ -215,10 +215,8 @@ internal fun RemoteScreen(
                         tvName = tvName,
                         shortcuts = shortcuts,
                         onEditShortcut = { editingShortcut = it },
-                        onLaunchShortcut = { index, shortcut ->
-                            if (shortcut.packageName.isBlank()) {
-                                editingShortcut = index
-                            } else {
+                        onLaunchShortcut = { _, shortcut ->
+                            if (shortcut.packageName.isNotBlank()) {
                                 remote.launchAppLink("intent:#Intent;package=${shortcut.packageName.trim()};end")
                             }
                         },
@@ -793,8 +791,8 @@ private fun QuickActionPill(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            ReferenceQuickActionSegment("â¹", "Back", remote::back)
-            ReferenceQuickActionSegment("â", "Home", remote::home)
+            ReferenceQuickActionSegment("‹", "Back", remote::back)
+            ReferenceQuickActionSegment("⌂", "Home", remote::home)
             ReferenceQuickActionSegment("123", "Numeric keypad", onShowNumberPad, small = true)
         }
     }
