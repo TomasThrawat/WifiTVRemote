@@ -566,7 +566,7 @@ private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
         modifier
               .size(154.dp)
             .clip(CircleShape)
-            .background(if (isSystemInDarkTheme()) Color(0xFF181818) else Color.White)
+            .background(Color(0xFF181818))
             .border(1.dp, remoteBorder(), CircleShape)
     ) {
         DPadKeyReference(Modifier.offset(54.dp, 3.dp), "▲", remote::up)
@@ -577,7 +577,7 @@ private fun DPadReference(remote: RemoteUiActions, modifier: Modifier) {
             modifier = Modifier
                   .offset(48.dp, 48.dp)
                 .size(58.dp),
-            color = if (isSystemInDarkTheme()) Color(0xFF121212) else Color(0xFFF5F5F5),
+            color = Color(0xFF121212),
             shape = CircleShape,
             onClick = remote::ok
         ) {
@@ -1348,7 +1348,7 @@ private fun ReferenceBottomNav(
                             .clip(RoundedCornerShape(22.dp))
                             .background(
                                 if (selected) {
-                                    if (isSystemInDarkTheme()) Color(0xFF14324A) else Color(0xFFE1F0FF)
+                                    Color(0xFF14324A)
                                 } else {
                                     Color.Transparent
                                 }
