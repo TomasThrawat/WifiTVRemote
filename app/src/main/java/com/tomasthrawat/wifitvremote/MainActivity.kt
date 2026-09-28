@@ -153,8 +153,9 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             }
             if (thisScan == scanGeneration) {
                 status = if (devices.isEmpty()) {
- ÃÂÃÂÃÂÃÂªÃÂÃÂ
+                    "No TVs found"
                 } else {
+                    "Found " + devices.size + " TVs"
                 }
                 scanJob = null
             }
@@ -252,7 +253,7 @@ private fun Screen(onCleanupInstalled: ((() -> Unit)?) -> Unit) {
             tvName = connectedTvName,
             onDisconnect = {
                 stopCurrentConnection()
-                status = "ÃÂÃÂªÃÂÃÂ
+                status = "Disconnected"
             }
         )
     } else {
