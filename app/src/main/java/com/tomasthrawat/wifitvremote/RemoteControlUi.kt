@@ -142,6 +142,7 @@ private enum class Destination { REMOTE, APPS, CAST, SETTINGS }
 internal fun RemoteScreen(
     remote: RemoteUiActions,
     status: String,
+    tvName: String,
     onDisconnect: () -> Unit
 ) {
     var destination by rememberSaveable { mutableStateOf(Destination.REMOTE.name) }
@@ -178,12 +179,13 @@ internal fun RemoteScreen(
                     ReferenceRemoteLayout(
                         remote = remote,
                         status = status,
+                        tvName = tvName,
                         onSetup = { destination = Destination.SETTINGS.name }
                     )
                 }
                 Destination.APPS.name -> ReferencePage { AppsPage(remote) }
                 Destination.CAST.name -> ReferencePage { CastPage() }
-                Destination.SETTINGS.name -> ReferencePage { SettingsPage(status, onDisconnect) }
+                Destination.SETTINGS.name -> ReferencePage { SettingsPage(tvName, status, onDisconnect) }
             }
             ReferenceBottomNav(
                 destination = destination,
@@ -198,6 +200,7 @@ internal fun RemoteScreen(
 private fun ReferenceRemoteLayout(
     remote: RemoteUiActions,
     status: String,
+    tvName: String,
     onSetup: () -> Unit
 ) {
     var numberPadOpen by rememberSaveable { mutableStateOf(false) }
@@ -224,6 +227,7 @@ private fun ReferenceRemoteLayout(
         ReferenceStatusPill(
             x = 72,
             y = 54,
+            tvName = tvName,
             connected = status.equals("Connected", ignoreCase = true)
         )
 
@@ -359,6 +363,7 @@ private fun ReferenceRemoteLayout(
 private fun ReferenceStatusPill(
     x: Int,
     y: Int,
+    tvName: String,
     connected: Boolean
 ) {
     Row(
@@ -379,7 +384,7 @@ private fun ReferenceStatusPill(
                 .background(if (connected) Color(0xFF4CD964) else remoteMuted())
         )
         Text(
-            "Samsung Smart TV",
+            tvName.ifBlank { "TV" },
             modifier = Modifier.padding(start = 6.dp),
             color = remoteText(),
             fontSize = 9.sp,
@@ -1298,7 +1303,7 @@ private fun CastPage() {
 }
 
 @Composable
-private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
+private fun SettingsPage(tvName: String, status: String, onDisconnect: () -> Unit) {
     Column(
         Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -1313,7 +1318,7 @@ private fun SettingsPage(status: String, onDisconnect: () -> Unit) {
                 Modifier.padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Text("Samsung Smart TV", color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                Text(tvName.ifBlank { "TV" }, color = remoteText(), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 Text(
                     status,
                     color = if (status == "متصل" || status == "Connected") Color(0xFF4ED17B) else remoteMuted(),
