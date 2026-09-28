@@ -52,10 +52,25 @@ jobs:
           arch: x86_64
           profile: pixel_7
           target: google_apis
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -no-metrics -camera-back none
           disable-animations: true
+          pre-emulator-launch-script: |
+            set -eux
+            adb kill-server || true
+            adb start-server
+            adb version
+            adb devices
           script: |
-            set -eu
+            set -euxo pipefail
+            adb start-server
+            for i in $(seq 1 30); do
+              if adb devices | awk 'NR>1 && $1 ~ /^emulator-/ && $2 == "device" {found=1} END {exit found ? 0 : 1}'; then
+                break
+              fi
+              sleep 2
+            done
+            adb devices
             adb install -r app/build/outputs/apk/debug/app-debug.apk
             python3 scripts/adb-ui-qa.py
 
